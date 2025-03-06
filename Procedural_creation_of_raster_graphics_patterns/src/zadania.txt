@@ -1,0 +1,13 @@
+zad1a
+		   double d = Math.sqrt((double)(i - height/2)*(i - height/2) +
+				   (j - width/2)*(j - width/2));
+
+		   // Zastosowanie wzoru I(d) = 128 * (sin(πd/w) + 1)
+		   double angle = Math.PI * d / ri; //czemu dokladnie r1 zmienic to
+		   int intensity = (int)(128 * (Math.sin(angle) + 1));
+
+		   // Upewnienie się, że intensywność jest w zakresie [0-255]
+		   intensity = Math.min(255, Math.max(0, intensity));
+
+		   // Ustawienie koloru na podstawie obliczonej intensywności
+		   color = byte2RGB(intensity, intensity, intensity);
