@@ -131,28 +131,28 @@ public class Demo0 {
 		};
 
 
-//      // Not used here but you should know how ...
-//      // Acquire the list of formats currently supported by ImageIO
-//      String  formats[] = ImageIO.getReaderFormatNames();
-//      writeln( "You can use the following image file formats:" );
-//      for ( i = 0; i < formats.length; i++ )
-//         writeln( formats[i] );
-//
-//      // Not used here but you should know how ...
-//      // Lines below show how to query supported file types
-//      // and how to read a graphic file
-//      in = new Scanner(System.in);
-//      input_image = null;
-//      writeln( "Type the image location and name to read:" );
-//      image_name = readStr();
-//
-//      try
-//      {
-//          input_image = ImageIO.read( new File( image_name ) );
-//      }
-//      catch (IOException e) {
-//         System.out.println( "Cannot read this image" );
-//      }
+      // Not used here but you should know how ...
+      // Acquire the list of formats currently supported by ImageIO
+      String  formats[] = ImageIO.getReaderFormatNames();
+      writeln( "You can use the following image file formats:" );
+      for ( i = 0; i < formats.length; i++ )
+         writeln( formats[i] );
+
+      // Not used here but you should know how ...
+      // Lines below show how to query supported file types
+      // and how to read a graphic file
+      in = new Scanner(System.in);
+      input_image = null;
+      writeln( "Type the image location and name to read:" );
+      image_name = readStr();
+
+      try
+      {
+          input_image = ImageIO.read( new File( image_name ) );
+      }
+      catch (IOException e) {
+         System.out.println( "Cannot read this image" );
+      }
 
       /*
       // IN order to read R,G,B from a pixel
