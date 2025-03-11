@@ -1,4 +1,4 @@
-zad1a
+zad1.zad1a
 		   double d = Math.sqrt((double)(i - height/2)*(i - height/2) +
 				   (j - width/2)*(j - width/2));
 

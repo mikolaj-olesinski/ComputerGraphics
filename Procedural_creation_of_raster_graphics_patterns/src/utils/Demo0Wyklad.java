@@ -35,11 +35,13 @@ public class Demo0Wyklad
         int i, j;
 
         // Fixed ring width
-        final int w = 10;
+        final int w = 5;
 
         // Get required image resolution from command line arguments
-        x_res = Integer.parseInt( args[0].trim() );
-        y_res = Integer.parseInt( args[1].trim() );
+//        x_res = Integer.parseInt( args[0].trim() );
+//        y_res = Integer.parseInt( args[1].trim() );
+        x_res = 2000;
+        y_res = 2000;
 
         // Initialize an empty image, use pixel format
         // with RGB packed in the integer data type

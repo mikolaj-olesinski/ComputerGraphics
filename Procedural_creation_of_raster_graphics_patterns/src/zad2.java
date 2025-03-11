@@ -1,132 +1,165 @@
 /*
  * Computer graphics courses at Wroclaw University of Technology
- * (C) by Jurek Sas, 2009
+ * (C) Wroclaw University of Technology, 2010
  *
  * Description:
- *   This demo shows basic raster operations on raset image
- *   represented by BufferedImage object. Image is created
- *   on pixel-by-pixel basis and then stored in a file.
- *
- *   Ten program demonstracyjny pokazuje sposób wykonywania
- *   podstawowych operacji grafiki rastrowej z uzyciem klasy
- *   BufferedImage. Wyjaśniono wykonywanie podstawowych operacji
- *   rastrowych na obiekcie BufefredImage
- */
+ * This demo shows basic raster operations on raster image
+ * represented by BufferedImage object. Image is created
+ * on pixel-by-pixel basis and then stored in a file.  */
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Scanner;
 
 public class zad2 {
-
-    /**
-     * @param args
-     */
-    private static Scanner in;
-
     public static void main(String[] args)
     {
-        String imagesDir = "images";
+        System.out.println("Image pattern overlay");
 
-        BufferedImage  image;
+        // Default values
+        String patternType = "grid"; // default pattern: rings, grid, or checkerboard
 
-        image = new BufferedImage( 2000, 2000,
-                BufferedImage.TYPE_INT_RGB );
+        // Parse command line arguments if provided
+        if (args.length >= 1) {
+            patternType = args[0].toLowerCase();
+        }
 
-        int  color;
-        int  i, j;
-        int  height = image.getHeight();
-        int  width  = image.getWidth();
+        BufferedImage inputImage;
 
-        int black = byte2RGB(0, 0, 0);
-        int white = byte2RGB(255, 255, 255);
+        try {
+            inputImage = ImageIO.read(new File("images/input.jpg"));
+            System.out.println("Obraz wczytany pomyślnie");
+        } catch (IOException e) {
+            System.out.println("Nie można wczytać obrazu: " + e.getMessage());
+            return;
+        }
 
-        int gridColor = black;
-        int bgColor = white;
-        int gridWidth = 50;
-        int spacing = 100;
-        int offsetX = 100;
-        int offsetY = 100;
+        // Generate the appropriate pattern based on input
+        if (patternType.equals("rings") || patternType.equals("a")) {
+            System.out.println("Nakładanie wzoru pierścieni");
+            applyRingPattern(inputImage);
+        } else if (patternType.equals("grid") || patternType.equals("b")) {
+            System.out.println("Nakładanie wzoru siatki");
+            applyGridPattern(inputImage);
+        } else if (patternType.equals("checkerboard") || patternType.equals("c")) {
+            System.out.println("Nakładanie wzoru szachownicy");
+            applyCheckerboardPattern(inputImage);
+        } else {
+            System.out.println("Nieznany typ wzoru. Dostępne opcje: rings, grid, checkerboard");
+            System.out.println("Użycie domyślnego: grid");
+            applyGridPattern(inputImage);
+        }
 
-        for (i = 0; i < height; i++) {
-            for (j = 0; j < width; j++) {
-
-                if (((i + offsetX) % (spacing + gridWidth) < gridWidth)  || ((j + offsetY) % (spacing + gridWidth) < gridWidth))
-                {
-                    image.setRGB(j, i, gridColor);
-                } else
-                {
-                    image.setRGB(j, i, bgColor);
-                }
-
+        // Save the created image in the 'images' folder'         
+        try {
+            // Create 'images' directory if it doesn't exist             
+            File imagesDir = new File("images");
+            if (!imagesDir.exists()) {
+                imagesDir.mkdir();
             }
+
+            //Save the image in the 'images' folder             
+            ImageIO.write(inputImage, "jpg", new File(imagesDir, "zad2_wynik.jpg"));
+            System.out.println("Obraz z wzorem został utworzony pomyślnie w folderze 'images'");
+        } catch (IOException e) {
+            System.out.println("Nie można zapisać obrazu: " + e.getMessage());
         }
-
-        try
-        {
-            File grayImageFile = new File(imagesDir + File.separator + "zad1c.bmp");
-            ImageIO.write(image, "bmp", grayImageFile);
-            System.out.println("Gray image created successfully at: " + grayImageFile.getAbsolutePath());
-        }
-        catch (IOException e)
-        {
-            System.out.println("Gray image cannot be stored in BMP file: " + e.getMessage());
-        };
-
-
-        System.exit( 0 );
     }
 
-    static int byte2RGB( int red, int green, int blue)
+    // Apply a ring pattern to the image
+    private static void applyRingPattern(BufferedImage image) {
+        // Image resolution
+        int x_res = image.getWidth();
+        int y_res = image.getHeight();
+
+        // Ring center coordinates
+        int x_c = x_res / 2;
+        int y_c = y_res / 2;
+
+        // Loop variables - indices of the current row and column
+        int i, j;
+
+        int color = int2RGB(255, 0, 0); // Czerwony
+
+        // Fixed ring width
+        final int w = 50;
+
+        // Process the image, pixel by pixel
+        for (i = 0; i < y_res; i++)
+            for (j = 0; j < x_res; j++) {
+                double d = Math.sqrt((double)(i - y_c)*(i - y_c) + (j - x_c)*(j - x_c));
+
+                if (Math.abs(Math.sin(Math.PI * d / w)) < 0.2) {
+                    image.setRGB(j, i, color);
+                }
+            }
+    }
+
+    // Apply a grid pattern to the image
+    private static void applyGridPattern(BufferedImage image) {
+        // Image resolution
+        int x_res = image.getWidth();
+        int y_res = image.getHeight();
+
+        // Loop variables - indices of the current row and column
+        int i, j;
+
+        // Grid parameters
+        int replacementColor = int2RGB(255, 0, 0); // Czerwony
+        int gridWidth = 10;
+        int spacing = 100;
+
+        // Process the image, pixel by pixel
+        for (i = 0; i < y_res; i++)
+            for (j = 0; j < x_res; j++) {
+                // Check if we are in the grid area and set the color
+                if ((i % (spacing + gridWidth) < gridWidth) || (j % (spacing + gridWidth) < gridWidth)) {
+                    image.setRGB(j, i, replacementColor);
+                }
+            }
+    }
+
+    // Apply a checkerboard pattern to the image
+    private static void applyCheckerboardPattern(BufferedImage image) {
+        // Image resolution
+        int x_res = image.getWidth();
+        int y_res = image.getHeight();
+
+        // Loop variables - indices of the current row and column
+        int i, j;
+
+        // Checkerboard parameters
+        int replacementColor = int2RGB(255, 255, 255); // Czerwony
+        int fieldSize = 100;
+        int row, col;
+
+        // Process the image, pixel by pixel
+        for (i = 0; i < y_res; i++)
+            for (j = 0; j < x_res; j++) {
+                row = i / fieldSize;
+                col = j / fieldSize;
+
+                if ((row + col) % 2 == 0) {
+                    // Only replace the border of each square to preserve the original image content
+                    if (i % fieldSize < 5 || i % fieldSize >= fieldSize - 5 ||
+                            j % fieldSize < 5 || j % fieldSize >= fieldSize - 5) {
+                        image.setRGB(j, i, replacementColor);
+                    }
+                }
+            }
+    }
+
+    // This method assembles RGB color intensities into single     
+    // packed integer. Arguments must be in <0..255> range     
+    static int int2RGB(int red, int green, int blue)
     {
-        // Color components must be in range 0 - 255
-        red   = 0xff & red;
-        green = 0xff & green;
-        blue  = 0xff & blue;
+        // Make sure that color intensities are in 0..255 range         
+        red = red & 0x000000FF;
+        green = green & 0x000000FF;
+        blue = blue & 0x000000FF;
+
+        // Assemble packed RGB using bit shift operations         
         return (red << 16) + (green << 8) + blue;
-    }
-
-
-
-
-
-
-
-    //=======================================================================
-    //=======================================================================
-    // Console functions - not strictly related to CG but make the work easier
-    //=======================================================================
-    //=======================================================================
-
-    static void writeln( String stg )
-    {
-        System.out.println( stg );
-    }
-
-    static void readln()
-    {
-        try
-        {
-            while( System.in.read() != '\n' );
-        }
-        catch( Throwable obj )
-        {
-        }
-    }
-
-    static String readStr()	{
-        return in.next();
-    }
-
-    static int readInt()
-    {
-        return (in.nextInt());
-    }
-
-    static double readDouble()
-    {
-        return (in.nextDouble() );
     }
 }
