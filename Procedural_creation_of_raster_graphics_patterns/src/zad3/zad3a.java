@@ -43,33 +43,46 @@ public class zad3a
         // with RGB packed in the integer data type
         image = new BufferedImage( x_res, y_res, BufferedImage.TYPE_INT_RGB);
 
-        // Create packed RGB representation of black and white colors
+        // Create packed RGB representation of black and gray color;
         black = int2RGB(0, 0, 0);
         gray = int2RGB(180, 180, 180);
 
+
+        // initial values
         int firstColor = gray;
         int secondColor = black;
         int fieldSize = 200;
         int radius = 80;
+
+        //initial row, column, centerX, centerY, dx (delta x), dy (delta y)
         int row, col, centerX, centerY, dx, dy;
 
         // Process the image, pixel by pixel
         for (i = 0; i < y_res; i++) {
             for (j = 0; j < x_res; j++) {
+
+                // Calculate the row and column of the current pixel
                 row = i / fieldSize;
                 col = j / fieldSize;
+
+                // Calculate the center of the current field
                 centerX = col * fieldSize + fieldSize / 2;
                 centerY = row * fieldSize + fieldSize / 2;
+
+                // Calculate the distance from the center of the field
                 dx = j - centerX;
                 dy = i - centerY;
 
+                // Make decision on the pixel color
                 if (dx * dx + dy * dy <= radius * radius) {
+                    //If the pixel is inside the circle, set the second color
                     image.setRGB(j, i, secondColor);
                 } else {
                     image.setRGB(j, i, firstColor);
                 }
             }
         }
+
 
         // Save the created image in the 'images' folder
         try
@@ -80,7 +93,7 @@ public class zad3a
                 imagesDir.mkdir();
             }
 
-            // Save the image as "zad1.zad1a.bmp" inside the 'images' folder
+            // Save the image inside the 'images' folder
             ImageIO.write(image, "bmp", new File(imagesDir, "zad3a.bmp"));
             System.out.println("Ring image created successfully in 'images' folder");
         }

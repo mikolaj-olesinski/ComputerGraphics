@@ -47,27 +47,41 @@ public class zad3d
         black = int2RGB(0, 0, 0);
         white = int2RGB(255, 255, 255);
 
+        //Initial values
         int firstColor = white;
         int secondColor = black;
         int fieldSize = 200;
         int radius = 200;
+        int w = 15;
+
+        //Initial row, column, centerX, centerY, dx (delta x), dy (delta y)
         int row, col, centerX, centerY, dx, dy;
 
         // Process the image, pixel by pixel
         for (i = 0; i < y_res; i++) {
             for (j = 0; j < x_res; j++) {
+
+                // Calculate the row and column of the current pixel
                 row = i / fieldSize;
                 col = j / fieldSize;
+
+                // Calculate the center of the current field
                 centerX = col * fieldSize + fieldSize / 2;
                 centerY = row * fieldSize + fieldSize / 2;
+
+                // Calculate the distance from the center of the field
                 dx = j - centerX;
                 dy = i - centerY;
 
+                // Calculate the distance from the center of the field
                 double d = Math.sqrt( dy * dy + dx * dx );
-                int w = 15;
+
+                // Find the ring index
                 int r = (int)d / w;
 
+                // Make decision on the pixel color
                 if ((d <= radius) && (r % 2 == 0)) {
+                    //If the pixel is inside the circle and the ring index is even
                     image.setRGB(j, i, secondColor);
                 } else {
                     image.setRGB(j, i, firstColor);

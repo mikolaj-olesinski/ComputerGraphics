@@ -41,9 +41,9 @@ import javax.imageio.ImageIO;
 public class Demo0a {
    public static void main(String[] args) {
       BufferedImage  image;
-      
-      image = new BufferedImage( 256, 256, BufferedImage.TYPE_INT_RGB ); 
-      
+
+      image = new BufferedImage( 256, 256, BufferedImage.TYPE_INT_RGB );
+
 
       // Fill it with a gray-shaded pattern 
       int  color;
@@ -51,70 +51,49 @@ public class Demo0a {
       int  w = 30;
       int  height = image.getHeight();
       int  width  = image.getWidth();
-      
+
       color = 0;
       w = width;
       int  w1 = 50;
       int ri = 50;
-      int ro = 150;  
-      
+      int ro = 150;
+
       for ( int i = 0; i < height; i++)
-         for ( int j = 0; j < width; j++)     
+         for ( int j = 0; j < width; j++)
          {
-            
-            // Pattern 1 - Basic sharp rings pattern            
-            double d = Math.sqrt((double)(i - width/2)*(i-width/2) + 
-                                         (j-height/2)*(j-height/2));
-            d = d / (0.5*width);
-            double gr = 127 * (Math.sin(40.28 * d) + 1);
-            /*
-            if (gr >= 128)
-               gr = 255;
-            else
-               gr = 0;
-               */
-            color = new Color( (int)gr, (int)gr, (int)gr ).getRGB();
-            
-            /*
-            double d = i/(0.1*height) + j/(1.0*width);
-            d = 0.2 * d;
-            double gr = 127 * (Math.sin(120.28 * d) + 1);
-            color = new Color( (int)gr, (int)gr, (int)gr ).getRGB();
-            */
-            /*
-            double d = i/(0.5*height) + j/(1.0*width);
-            double gr = 127 * (Math.sin(120.28 * d) + 1);
-            color = new Color( (int)gr, (int)gr, (int)gr ).getRGB();
-            */
-            /*
-            double d = i/(1.0*height) - j/(1.0*width);
-            d = d / 4;
-            double gr = 127 * (Math.sin(120.28 * d) + 1);
-            color = new Color( (int)gr, (int)gr, (int)gr ).getRGB();
-            */
-            /*      
+            double d = Math.sqrt((double)(i - width/2)*(i-width/2) +
+                    (j-height/2)*(j-height/2));
             ri = ((int)d)/20;
-            if ( (ri%2)==0)
+
+            double angle = Math.atan2((double)(j-height/2), (double)(i-width/2)) + 3.1415;
+            int si = (int)(8*angle/(2*3.1415));
+            if ( (ri%2) == (si%2) )
             {
-               // color = byte2RGB( 0, 0, 0 );
-               color = new Color( 0, 0, 0 ).getRGB();
+               //color = byte2RGB( 0, 0, 0 );
+               color = new Color( 255, 255, 0 ).getRGB();
             }
             else
-               // color = byte2RGB( 255, 255, 255 );
-               color = new Color( 255, 255, 255 ).getRGB();            
-            */
-            image.setRGB( j, i, color );            
+               color = new Color( 0, 0, 255 ).getRGB();
+            //color = byte2RGB( 255, 255, 255 );
+
+            image.setRGB( j, i, color );
          }
-      
-      try 
+
+      try
       {
-         ImageIO.write( image, "bmp", new File( "d:\\test12.bmp") );
-         System.out.println( "Gray image created" ); 
-      } 
+         File imagesDir = new File("images");
+         if (!imagesDir.exists()) {
+            imagesDir.mkdir();
+         }
+
+         // Save the image as "zad1.zad1a.bmp" inside the 'images' folder
+         ImageIO.write(image, "bmp", new File(imagesDir, "test.bmp"));
+         System.out.println("Ring image created successfully in 'images' folder");
+      }
       catch (IOException e)
       {
-         System.out.println( "Gray image cannot be stored in BMP file" );  
-      };    
+         System.out.println( "Gray image cannot be stored in BMP file" );
+      };
       
       
       // Now make color image
@@ -127,15 +106,15 @@ public class Demo0a {
          }
       
       // Save image in graphics file
-      try 
-      {
-          ImageIO.write( image, "jpg", new File( "d:\\test_color.jpg") );
-          System.out.println( "Color image created successfully" );  
-      } 
-      catch (IOException e)
-      {
-          System.out.println( "Color image cannot be stored in JPG file" );   
-      };      
+//      try
+//      {
+//          ImageIO.write( image, "jpg", new File( "d:\\test_color.jpg") );
+//          System.out.println( "Color image created successfully" );
+//      }
+//      catch (IOException e)
+//      {
+//          System.out.println( "Color image cannot be stored in JPG file" );
+//      };
       
       
       // Not used here but you should know how ...      

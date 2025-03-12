@@ -52,32 +52,34 @@ public class zad3c
         x_c = x_res / 2;
         y_c = y_res / 2;
 
-        int color;
-
-
-// Process the image, pixel by pixel
-
-
-// Ustalenie wartości minimalnej i maksymalnej dla w
-        double min_w = 3;    // wartość w przy d = 0
-        double max_w = 15;   // wartość w przy d = d_max
-
-// Obliczenie maksymalnej odległości od środka
+        //Calculate the maximum distance from the center of the image
         double d_max = Math.sqrt(x_c * x_c + y_c * y_c);
 
+        // Initial values for the highest and lowest width of the ring
+        double min_w = 5;
+        double max_w = 15;
+
+        // Process the image, pixel by pixel
         for (i = 0; i < y_res; i++){
             for (j = 0; j < x_res; j++) {
+
+                //Calculate distance to the image center
                 double d = Math.sqrt((i - y_c) * (i - y_c) + (j - x_c) * (j - x_c));
 
-                // Liniowa interpolacja: w wynosi min_w przy d = 0, a max_w przy d = d_max
+                // Interpolate the width of the ring
                 double w = min_w + (max_w - min_w) * (d / d_max);
 
+                // Find the ring index
                 int r = (int)(d / w);
 
-                if (r % 2 == 0)
+                // Make decision on the pixel color
+                if (r % 2 == 0) {
+                    //If the ring index is even, set the black color
                     image.setRGB(j, i, black);
-                else
+                }
+                else {
                     image.setRGB(j, i, white);
+                }
             }
         }
 
@@ -90,7 +92,7 @@ public class zad3c
                 imagesDir.mkdir();
             }
 
-            // Save the image as "zad1.zad1a.bmp" inside the 'images' folder
+            // Save the image as inside the 'images' folder
             ImageIO.write(image, "bmp", new File(imagesDir, "zad3c.bmp"));
             System.out.println("Ring image created successfully in 'images' folder");
         }

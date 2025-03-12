@@ -47,31 +47,30 @@ public class zad3b
         black = int2RGB(0, 0, 0);
         white = int2RGB(255, 255, 255);
 
+        //initial values
         int firstColor = white;
         int secondColor = black;
         int fieldSize = 100;
-        int centerX = x_res / 2;
-        int centerY = y_res / 2;
+
 
 
         // Process the image, pixel by pixel
         for (i = 0; i < y_res; i++) {
             for (j = 0; j < x_res; j++) {
-                // Obliczenie obróconych współrzędnych z offsetem
-                int u = j - centerX;
-                int v = i - centerY;
 
-                // Obrót o 45 stopni (π/4 radianów)
+
+                //Roate the point by 45 degrees
                 double angle = Math.PI / 4.0;
-                double rotatedU = u * Math.cos(angle) - v * Math.sin(angle);
-                double rotatedV = u * Math.sin(angle) + v * Math.cos(angle);
+                double rotatedX = j * Math.cos(angle) - i * Math.sin(angle);
+                double rotatedY = j * Math.sin(angle) + i * Math.cos(angle);
 
-                // Określenie, w którym polu szachownicy znajduje się piksel
-                int fieldX = (int)Math.floor(rotatedU / fieldSize);
-                int fieldY = (int)Math.floor(rotatedV / fieldSize);
+                // Calculate the field coordinates
+                int fieldX = (int)Math.floor(rotatedX / fieldSize);
+                int fieldY = (int)Math.floor(rotatedY / fieldSize);
 
-                // Określenie koloru na podstawie parzystości sumy współrzędnych pola
+                // Make decision on the pixel color
                 if ((fieldX + fieldY) % 2 == 0) {
+                    //If the sum of the field coordinates is even, set the first color
                     image.setRGB(j, i, firstColor);
                 } else {
                     image.setRGB(j, i, secondColor);
@@ -88,7 +87,7 @@ public class zad3b
                 imagesDir.mkdir();
             }
 
-            // Save the image as "zad1.zad1a.bmp" inside the 'images' folder
+            // Save the image inside the 'images' folder
             ImageIO.write(image, "bmp", new File(imagesDir, "zad3b.bmp"));
             System.out.println("Ring image created successfully in 'images' folder");
         }
