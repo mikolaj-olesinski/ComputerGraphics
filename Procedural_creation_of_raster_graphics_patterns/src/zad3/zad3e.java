@@ -55,7 +55,7 @@ public class zad3e
         for (i = 0; i < y_res; i++) {
             for (j = 0; j < x_res; j++) {
 
-                // Calculate the distance from the center
+                // Calculate the angle of the pixel
                 double angle = Math.atan2(j- (double) y_res /2, i- (double) x_res /2) + Math.PI;
 
                 // Calculate the sector index
