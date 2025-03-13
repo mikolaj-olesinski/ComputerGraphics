@@ -51,12 +51,23 @@ public class zad3e
         //Initial values
         int num_of_sectors = 28;
 
+        //Center of the image
+        int x_c = x_res / 2;
+        int y_c = y_res / 2;
+
         // Process the image, pixel by pixel
         for (i = 0; i < y_res; i++) {
             for (j = 0; j < x_res; j++) {
 
-                // Calculate the angle of the pixel
-                double angle = Math.atan2(j- (double) y_res /2, i- (double) x_res /2) + Math.PI;
+                // Calculate the distance from the center of the image
+                double dx = j - x_c;
+                double dy = i - y_c;
+
+                //Calculate the angle of the pixel
+                double angle = Math.atan2(dy, dx);
+
+                // Make sure that the angle is in the range <0, 2*PI>
+                angle += Math.PI;
 
                 // Calculate the sector index
                 int si = (int)(num_of_sectors * angle/(2*Math.PI));
