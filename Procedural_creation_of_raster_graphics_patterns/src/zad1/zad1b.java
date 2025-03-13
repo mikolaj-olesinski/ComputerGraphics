@@ -9,6 +9,10 @@ package zad1;
  * on pixel-by-pixel basis and then stored in a file.
  */
 
+//Example
+//javac -d out src/zad1/za1b.java
+//java -cp out zad1.zad1b 2000 2000 50 100 100 0 0 0 255 255 255
+//java <x_res> <y_res> <grid_width> <spacing_x> <spacing_y> <grid_red> <grid_green> <grid_blue> <bg_red> <bg_green> <bg_blue>
 import java.io.*;
 import java.awt.image.*;
 import javax.imageio.*;
@@ -17,57 +21,91 @@ public class zad1b
 {
     public static void main(String[] args)
     {
-        System.out.println("Ring pattern synthesis");
+        System.out.println("Grid pattern synthesis");
 
         BufferedImage image;
 
         // Image resolution
         int x_res, y_res;
 
-        // Ring center coordinates
-        int x_c, y_c;
-
-        // Predefined black and white RGB representations
-        // packed as integers
-        int black, white;
-
-        // Loop variables - indices of the current row and column
-        int i, j;
-
-
-        // Get required image resolution from command line arguments
-//        x_res = Integer.parseInt( args[0].trim() );
-//        y_res = Integer.parseInt( args[1].trim() );
+        // Default values
         x_res = 2000;
         y_res = 2000;
+
+        // Default grid parameters
+        int gridWidth = 50;      // Width of grid lines
+        int spacingX = 100;      // Distance between grid lines along X axis
+        int spacingY = 100;      // Distance between grid lines along Y axis
+
+        // Default colors (black grid on white background)
+        int gridRed = 0, gridGreen = 0, gridBlue = 0;  // Grid color (black)
+        int bgRed = 255, bgGreen = 255, bgBlue = 255;  // Background color (white)
+
+        // Parse command line arguments
+        try {
+            // Parse resolution
+            if (args.length >= 2) {
+                x_res = Integer.parseInt(args[0].trim());
+                y_res = Integer.parseInt(args[1].trim());
+            }
+
+            // Parse grid parameters
+            if (args.length >= 3) {
+                gridWidth = Integer.parseInt(args[2].trim());
+            }
+
+            if (args.length >= 5) {
+                spacingX = Integer.parseInt(args[3].trim());
+                spacingY = Integer.parseInt(args[4].trim());
+            }
+
+            // Parse grid color (RGB)
+            if (args.length >= 8) {
+                gridRed = Integer.parseInt(args[5].trim());
+                gridGreen = Integer.parseInt(args[6].trim());
+                gridBlue = Integer.parseInt(args[7].trim());
+            }
+
+            // Parse background color (RGB)
+            if (args.length >= 11) {
+                bgRed = Integer.parseInt(args[8].trim());
+                bgGreen = Integer.parseInt(args[9].trim());
+                bgBlue = Integer.parseInt(args[10].trim());
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid command line arguments. Using default values.");
+        }
+
 
         // Initialize an empty image, use pixel format
         // with RGB packed in the integer data type
         image = new BufferedImage( x_res, y_res, BufferedImage.TYPE_INT_RGB);
 
-        // Create packed RGB representation of black and white colors
-        black = int2RGB( 0, 0, 0 );
-        white = int2RGB( 255, 255, 255 );
+        // Loop variables - indices of the current row and column
+        int i, j;
 
-
-        int gridColor = black;
-        int bgColor = white;
-        int gridWidth = 50;
-        int spacing = 100;
-
+        int gridColor = int2RGB(gridRed, gridGreen, gridBlue);
+        int bgColor = int2RGB(bgRed, bgGreen, bgBlue);
 
         // Process the image, pixel by pixel
-        for ( i = 0; i < y_res; i++)
-            for ( j = 0; j < x_res; j++)
-            {
-                if ((i % (spacing + gridWidth) < gridWidth)  || (j % (spacing + gridWidth) < gridWidth))
+        for ( i = 0; i < y_res; i++){
+
+            for ( j = 0; j < x_res; j++) {
+
+                // Make decision on the pixel color
+                if ((i % (spacingY + gridWidth) < gridWidth) || (j % (spacingX + gridWidth) < gridWidth))
                 {
+                    // Check if we are in the grid area and set the color
                     image.setRGB(j, i, gridColor);
                 } else
                 {
                     image.setRGB(j, i, bgColor);
                 }
+
             }
+        }
+
+
 
         // Save the created image in the 'images' folder
         try
@@ -79,7 +117,7 @@ public class zad1b
             }
 
             // Save the image as "zad1.zad1a.bmp" inside the 'images' folder
-            ImageIO.write(image, "bmp", new File(imagesDir, "zad1.zad1b.bmp"));
+            ImageIO.write(image, "bmp", new File(imagesDir, "zad1b.bmp"));
             System.out.println("Ring image created successfully in 'images' folder");
         }
         catch (IOException e)

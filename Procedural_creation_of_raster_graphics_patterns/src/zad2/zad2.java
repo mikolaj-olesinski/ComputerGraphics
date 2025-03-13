@@ -7,6 +7,11 @@ package zad2;/*
  * represented by BufferedImage object. Image is created
  * on pixel-by-pixel basis and then stored in a file.  */
 
+//Example
+
+//javac -d out src/zad4/zad4.java
+//java -cp out zad2.zad2 rings
+//java <patternType> (rings, grid, checkerboard) or (a, b, c)
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -29,25 +34,25 @@ public class zad2 {
 
         try {
             inputImage = ImageIO.read(new File("images/input.jpg"));
-            System.out.println("Obraz wczytany pomyślnie");
+            System.out.println("Obraz wczytany pomyslnie");
         } catch (IOException e) {
-            System.out.println("Nie można wczytać obrazu: " + e.getMessage());
+            System.out.println("Nie mozna wczytac obrazu: " + e.getMessage());
             return;
         }
 
         // Generate the appropriate pattern based on input
         if (patternType.equals("rings") || patternType.equals("a")) {
-            System.out.println("Nakładanie wzoru pierścieni");
+            System.out.println("Nakladanie wzoru pierscieni");
             applyRingPattern(inputImage);
         } else if (patternType.equals("grid") || patternType.equals("b")) {
-            System.out.println("Nakładanie wzoru siatki");
+            System.out.println("Nakladanie wzoru siatki");
             applyGridPattern(inputImage);
         } else if (patternType.equals("checkerboard") || patternType.equals("c")) {
-            System.out.println("Nakładanie wzoru szachownicy");
+            System.out.println("Nakladanie wzoru szachownicy");
             applyCheckerboardPattern(inputImage);
         } else {
             System.out.println("Nieznany typ wzoru. Dostępne opcje: rings, grid, checkerboard");
-            System.out.println("Użycie domyślnego: grid");
+            System.out.println("Uzycie domyslnego: grid");
             applyGridPattern(inputImage);
         }
 
@@ -61,9 +66,9 @@ public class zad2 {
 
             //Save the image in the 'images' folder             
             ImageIO.write(inputImage, "jpg", new File(imagesDir, "zad2_wynik.jpg"));
-            System.out.println("Obraz z wzorem został utworzony pomyślnie w folderze 'images'");
+            System.out.println("Obraz z wzorem zostal utworzony pomyslnie w folderze 'images'");
         } catch (IOException e) {
-            System.out.println("Nie można zapisać obrazu: " + e.getMessage());
+            System.out.println("Nie mozna zapisac obrazu: " + e.getMessage());
         }
     }
 
@@ -121,8 +126,10 @@ public class zad2 {
         for (i = 0; i < y_res; i++)
             for (j = 0; j < x_res; j++) {
 
-                // Check if we are in the grid area and set the color
-                if ((i % (spacing + gridWidth) < gridWidth) || (j % (spacing + gridWidth) < gridWidth)) {
+                //Make decision on the pixel color
+                if ((i % (spacing + gridWidth) < gridWidth) || (j % (spacing + gridWidth) < gridWidth))
+                {
+                    // Check if we are in the grid area and set the color
                     image.setRGB(j, i, black);
                 }
             }
@@ -145,12 +152,16 @@ public class zad2 {
         // Process the image, pixel by pixel
         for (i = 0; i < y_res; i++)
             for (j = 0; j < x_res; j++) {
+
+                // Calculate the row and column of the current pixel
                 row = i / fieldSize;
                 col = j / fieldSize;
 
-                if ((row + col) % 2 == 0) {
+                if ((row + col) % 2 == 0)
+                {
+                    // If the row plus column is even, set the black color
                     image.setRGB(j, i, black);
-                    }
+                }
             }
 
     }

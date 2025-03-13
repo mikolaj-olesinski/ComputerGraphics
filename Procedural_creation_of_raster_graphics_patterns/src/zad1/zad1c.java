@@ -9,6 +9,12 @@ package zad1;
  * on pixel-by-pixel basis and then stored in a file.
  */
 
+//Example
+
+//javac -d out src/zad1/zad1c.java
+//java -cp out zad1.zad1c 2000 2000 200 0 0 0 255 255 255
+//java <x_res> <y_res> <fieldSize> <main_Red> <main_Green> <main_Blue> <bgRed> <bgGreen> <bgBlue>
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -18,50 +24,84 @@ public class zad1c
 {
     public static void main(String[] args)
     {
-        System.out.println("Ring pattern synthesis");
+        System.out.println("Checkboard pattern synthesis");
 
         BufferedImage image;
+
 
         // Image resolution
         int x_res, y_res;
 
-        // Predefined black and white RGB representations
-        // packed as integers
-        int black, white;
-
-        // Loop variables - indices of the current row and column
-        int i, j;
-
-
-        // Get required image resolution from command line arguments
-//        x_res = Integer.parseInt( args[0].trim() );
-//        y_res = Integer.parseInt( args[1].trim() );
+        // Default values
         x_res = 2000;
         y_res = 2000;
+
+        // Default checkerboard parameters
+        int fieldSize = 200;      // Size of the checkerboard field
+
+        // Default colors
+        int main_Red = 0, main_Green = 0, main_Blue = 0;  // Grid color (black)
+        int bgRed = 255, bgGreen = 255, bgBlue = 255;  // Background color (white)
+
+
+        // Parse command line arguments
+        try {
+            // Parse resolution
+            if (args.length >= 2) {
+                x_res = Integer.parseInt(args[0].trim());
+                y_res = Integer.parseInt(args[1].trim());
+            }
+
+            // Parse field size
+            if (args.length >= 3) {
+                fieldSize = Integer.parseInt(args[2].trim());
+            }
+
+            // Parse grid color (RGB)
+            if (args.length >= 6) {
+                main_Red = Integer.parseInt(args[3].trim());
+                main_Green = Integer.parseInt(args[4].trim());
+                main_Blue = Integer.parseInt(args[5].trim());
+            }
+
+            // Parse background color (RGB)
+            if (args.length >= 9) {
+                bgRed = Integer.parseInt(args[6].trim());
+                bgGreen = Integer.parseInt(args[7].trim());
+                bgBlue = Integer.parseInt(args[8].trim());
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid command line arguments. Using default values.");
+        }
+
 
         // Initialize an empty image, use pixel format
         // with RGB packed in the integer data type
         image = new BufferedImage( x_res, y_res, BufferedImage.TYPE_INT_RGB);
 
-        // Create packed RGB representation of black and white colors
-        black = int2RGB( 0, 0, 0 );
-        white = int2RGB( 255, 255, 255 );
 
+        // Loop variables - indices of the current row and column
+        int i, j;
 
-        int firstColor = black;
-        int secondColor = white;
-        int fieldSize = 200;
+        //Initial row and column
         int row, col;
+
+        //Initial color
+        int firstColor = int2RGB(main_Red, main_Green, main_Blue);
+        int secondColor = int2RGB(bgRed, bgGreen, bgBlue);
 
         // Process the image, pixel by pixel
         for ( i = 0; i < y_res; i++)
             for ( j = 0; j < x_res; j++)
             {
+                // Calculate the row and column of the current pixel
                 row = i / fieldSize;
                 col = j / fieldSize;
 
+                //Make the decision on pixel color
                 if ((row + col) % 2 == 0)
                 {
+                    //If the row plus column is even, set the first color
                     image.setRGB(j, i, firstColor);
                 } else
                 {
@@ -79,7 +119,7 @@ public class zad1c
             }
 
             // Save the image as "zad1.zad1a.bmp" inside the 'images' folder
-            ImageIO.write(image, "bmp", new File(imagesDir, "zad1.zad1c.bmp"));
+            ImageIO.write(image, "bmp", new File(imagesDir, "zad1c.bmp"));
             System.out.println("Ring image created successfully in 'images' folder");
         }
         catch (IOException e)

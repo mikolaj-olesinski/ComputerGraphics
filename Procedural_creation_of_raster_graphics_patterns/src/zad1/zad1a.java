@@ -9,6 +9,11 @@ package zad1;
  * on pixel-by-pixel basis and then stored in a file.
  */
 
+//Example
+//javac -d out src/zad1/zad1a.java
+//java -cp out zad1.zad1a 2000 2000 50
+//java <x_res> <y_res> <w>
+
 import java.io.*;
 import java.awt.image.*;
 import javax.imageio.*;
@@ -34,12 +39,35 @@ public class zad1a
         // Get required image resolution from command line arguments
 //        x_res = Integer.parseInt( args[0].trim() );
 //        y_res = Integer.parseInt( args[1].trim() );
+
+        //Default image resolution values
         x_res = 2000;
         y_res = 2000;
 
+        // Default ring width
+        int w = 50;
+
+
+        // Override defaults with command line arguments if provided
+        try {
+            // Check if resolution is provided
+            if (args.length >= 2) {
+                x_res = Integer.parseInt(args[0].trim());
+                y_res = Integer.parseInt(args[1].trim());
+            }
+
+            // Check if ring width is provided
+            if (args.length >= 3) {
+                w = Integer.parseInt(args[2].trim());
+            }
+
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid command line arguments. Using default values.");
+        }
+
         // Initialize an empty image, use pixel format
         // with RGB packed in the integer data type
-        image = new BufferedImage( x_res, y_res, BufferedImage.TYPE_INT_RGB);
+        image = new BufferedImage(x_res, y_res, BufferedImage.TYPE_INT_RGB);
 
 
         // Find coordinates of the image center
@@ -48,22 +76,19 @@ public class zad1a
 
         int  color;
 
-        // Fixed ring width
-        final int w = 50;
-
         // Process the image, pixel by pixel
         for ( i = 0; i < y_res; i++)
             for ( j = 0; j < x_res; j++)
             {
+                //Calculate distance to the image center
+                double d = Math.sqrt((double)(i - y_c)*(i - y_c) + (j - x_c)*(j - x_c));
 
-                double d = Math.sqrt((double)(i - y_c)*(i - y_c) +
-                        (j - x_c)*(j - x_c));
-
+                //Calculate intensity of the pixel
                 double angle = Math.PI * d / w;
                 int intensity = (int)(128 * (Math.sin(angle) + 1));
-
                 intensity = Math.min(255, Math.max(0, intensity));
 
+                // Set the pixel value
                 color = int2RGB(intensity, intensity, intensity);
                 image.setRGB( j, i, color );
             }
@@ -78,7 +103,7 @@ public class zad1a
             }
 
             // Save the image as "zad1.zad1a.bmp" inside the 'images' folder
-            ImageIO.write(image, "bmp", new File(imagesDir, "zad1.zad1a.bmp"));
+            ImageIO.write(image, "bmp", new File(imagesDir, "zad1a.bmp"));
             System.out.println("Ring image created successfully in 'images' folder");
         }
         catch (IOException e)
