@@ -60,6 +60,9 @@ public class zad3e
             for (j = 0; j < x_res; j++) {
 
                 // Calculate the distance from the center of the image
+
+                int offset_i = i - 100;
+                int offset_j = j - 100;
                 double dx = j - x_c;
                 double dy = i - y_c;
 

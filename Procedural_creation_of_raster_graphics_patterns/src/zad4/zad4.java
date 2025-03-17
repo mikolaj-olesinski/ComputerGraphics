@@ -37,7 +37,7 @@ public class zad4 {
         //Load the images
         try {
             inputImage = ImageIO.read(new File("images/input1.jpg"));
-            secondImage = ImageIO.read(new File("images/input2.jpg")); // Dodać tę linię
+            secondImage = ImageIO.read(new File("images/input2.jpg"));
             System.out.println("Obrazy wczytane pomyslnie");
         } catch (IOException e) {
             System.out.println("Nie mozna wczytac obrazu: " + e.getMessage());

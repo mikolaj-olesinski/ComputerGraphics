@@ -38,7 +38,7 @@ public class zad1b
         int spacingY = 100;      // Distance between grid lines along Y axis
 
         // Default colors (black grid on white background)
-        int gridRed = 0, gridGreen = 0, gridBlue = 0;  // Grid color (black)
+        int gridRed = 0, gridGreen = 0, gridBlue = 255;  // Grid color (black)
         int bgRed = 255, bgGreen = 255, bgBlue = 255;  // Background color (white)
 
         // Parse command line arguments
@@ -93,7 +93,7 @@ public class zad1b
             for ( j = 0; j < x_res; j++) {
 
                 // Make decision on the pixel color
-                if ((i % (spacingY + gridWidth) < gridWidth) || (j % (spacingX + gridWidth) < gridWidth))
+                if (((i - 175) % (spacingY + gridWidth) < gridWidth) || ((j - 100) % (spacingX + gridWidth) < gridWidth))
                 {
                     // Check if we are in the grid area and set the color
                     image.setRGB(j, i, gridColor);

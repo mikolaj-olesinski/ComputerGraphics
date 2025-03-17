@@ -266,3 +266,22 @@
     if ( int_i < 0 )
        int_i = 0;
     color = new Color( int_i, int_i, int_i ).getRGB();
+
+
+
+
+    //romby
+            for (i = 0; i < y_res; i++) {
+                for (j = 0; j < x_res; j++) {
+                    // Znalezienie środka kratki dla rombu
+                    int centerX = (j / fieldSize) * fieldSize + fieldSize / 2;
+                    int centerY = (i / fieldSize) * fieldSize + fieldSize / 2;
+
+                    // Sprawdzenie, czy piksel mieści się w rombie
+                    if (Math.abs(j - centerX) + Math.abs(i - centerY) < fieldSize / 2) {
+                        image.setRGB(j, i, firstColor);
+                    } else {
+                        image.setRGB(j, i, secondColor);
+                    }
+                }
+            }
