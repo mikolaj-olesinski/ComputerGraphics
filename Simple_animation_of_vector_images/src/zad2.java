@@ -1,26 +1,19 @@
 import java.awt.*;
 import javax.swing.*;
-import java.awt.event.*;
 
 public class zad2 {
     public static void main(String[] args) {
         // Create the window of the solar system
         SolarSystemWindow window = new SolarSystemWindow();
-
-        // Closing window terminates the program
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Set the initial position of the window on the screen
-        // and make the window visible
         window.setBounds(50, 50, 1000, 800);
         window.setVisible(true);
-
 
         // Start the infinite loop of animation.
         while (true) {
             try {
                 // Wait x milliseconds before the system is redisplayed
-                Thread.sleep(1);
+                Thread.sleep(5);
             } catch (InterruptedException e) {
                 System.out.println("Program interrupted");
             }
@@ -31,253 +24,226 @@ public class zad2 {
 }
 
 // ===============================================================
+// CelestialBody - represents a generic celestial object
+// ===============================================================
+abstract class CelestialBody {
+    protected final String name;
+    protected final int size; // diameter of the body
+    protected final int orbitRadius;
+    protected final double realPeriod; //period of the planet in seconds
+    protected final Color color;
+    protected Point position; // Current position of the celestial body
+
+    public CelestialBody(String name, int size, int orbitRadius, double realPeriod, Color color) {
+        this.name = name;
+        this.size = size;
+        this.orbitRadius = orbitRadius;
+        this.realPeriod = realPeriod;
+        this.color = color;
+        this.position = new Point(0, 0); // Initialize position
+    }
+
+    public int getSize() { return size; }
+    public int getOrbitRadius() { return orbitRadius; }
+    public double getPeriod() { return realPeriod; }
+    public Color getColor() { return color; }
+    public String getName() { return name; }
+    public Point getPosition() { return position; }
+    public void setPosition(Point position) { this.position = position; }
+
+    protected void drawCelestialBody(Graphics g) {
+        Color originalColor = g.getColor();
+        g.setColor(color);
+        g.fillOval(position.x - size/2, position.y - size/2, size, size);
+        g.setColor(originalColor);
+    }
+
+    protected void drawOrbit(Graphics g, int centerX, int centerY) {
+        g.drawOval(centerX - orbitRadius, centerY - orbitRadius, orbitRadius * 2, orbitRadius * 2);
+    }
+}
+
+// ===============================================================
+// Sun - represents the sun in the solar system
+// ===============================================================
+class Sun extends CelestialBody {
+    public Sun(String name, int size, Color color) {
+        // Sun has no orbit and no period as it's stationary at the center
+        super(name, size, 0, 0, color);
+    }
+
+    // No need to draw orbit for Sun
+    @Override
+    protected void drawOrbit(Graphics g, int centerX, int centerY) {
+        // Sun doesn't have an orbit
+    }
+}
+
+// ===============================================================
+// Planet - represents a planet in the solar system
+// ===============================================================
+class Planet extends CelestialBody {
+    public Planet(String name, int size, int orbitRadius, double realPeriod, Color color) {
+        super(name, size, orbitRadius, realPeriod, color);
+    }
+
+    protected void drawPlanetWithRing(Graphics g) {
+        // Draw the planet
+        drawCelestialBody(g);
+        Color originalColor = g.getColor();
+
+        // Draw the ring
+        g.setColor(new Color(200, 200, 200, 100));
+        g.drawOval(position.x - size, position.y - size / 4, size * 2, size / 2);
+        g.setColor(originalColor);
+    }
+}
+
+// ===============================================================
+// Moon - represents a moon orbiting a planet
+// ===============================================================
+class Moon extends CelestialBody {
+    private final Planet parentPlanet;
+
+    public Moon(String name, int size, int orbitRadius, double realPeriod, Color color, Planet parentPlanet) {
+        super(name, size, orbitRadius, realPeriod, color);
+        this.parentPlanet = parentPlanet;
+    }
+
+    public Planet getParentPlanet() {
+        return parentPlanet;
+    }
+
+    protected void drawOrbit(Graphics g) {
+        Point parentPos = parentPlanet.getPosition();
+        g.drawOval(parentPos.x - orbitRadius, parentPos.y - orbitRadius, orbitRadius * 2, orbitRadius * 2);
+    }
+}
+
+// ===============================================================
 // SolarSystemPane - implements the content pane of the window
 // in which the animated solar system is displayed
 // ===============================================================
-
 class SolarSystemPane extends JPanel {
-    // Coordinates of the center of the system (the Sun)
-    private int centerX, centerY;
 
-    // Timescale - the speed of the simulation
-    private double timeScale = 2_000_000; // Default value 2 million
-
-    // Real periods of the planets' orbits (in seconds)
-    private final double MERCURY_REAL_PERIOD = 7600530.0;      // 88 days
-    private final double VENUS_REAL_PERIOD = 19414166.0;       // 225 days
-    private final double EARTH_REAL_PERIOD = 31558149.0;       // 365.25 days
-    private final double MARS_REAL_PERIOD = 59355036.0;        // 687 days
-    private final double JUPITER_REAL_PERIOD = 374335776.0;    // 11.86 years
-    private final double SATURN_REAL_PERIOD = 929596608.0;     // 29.46 years
-    private final double URANUS_REAL_PERIOD = 2651370019.0;    // 84.02 years
-    private final double NEPTUNE_REAL_PERIOD = 5200418560.0;   // 164.79 years
-
-    // Real period of the Moon's orbit (in seconds)
-    private final double MOON_REAL_PERIOD = 2360591.0;         // 27.3 days
-
-    // Periods of the planets' orbits (in milliseconds) calculated in updatePeriods()
-    private double mercuryPeriod;
-    private double venusPeriod;
-    private double earthPeriod;
-    private double marsPeriod;
-    private double jupiterPeriod;
-    private double saturnPeriod;
-    private double uranusPeriod;
-    private double neptunePeriod;
-    private double moonPeriod;
-
-    // Radii of the planets' orbits
-    private final int MERCURY_ORBIT_RADIUS = 50;
-    private final int VENUS_ORBIT_RADIUS = 80;
-    private final int EARTH_ORBIT_RADIUS = 120;
-    private final int MARS_ORBIT_RADIUS = 180;
-    private final int JUPITER_ORBIT_RADIUS = 260;
-    private final int SATURN_ORBIT_RADIUS = 320;
-    private final int URANUS_ORBIT_RADIUS = 370;
-    private final int NEPTUNE_ORBIT_RADIUS = 420;
-
-    // Radius of the Moon's orbit
-    private final int MOON_ORBIT_RADIUS = 20;
-
-    // Sizes of the planets and the Moon (Diameters)
-    private final int SUN_SIZE = 30;
-    private final int MERCURY_SIZE = 6;
-    private final int VENUS_SIZE = 10;
-    private final int EARTH_SIZE = 12;
-    private final int MARS_SIZE = 8;
-    private final int JUPITER_SIZE = 24;
-    private final int SATURN_SIZE = 22;
-    private final int URANUS_SIZE = 16;
-    private final int NEPTUNE_SIZE = 16;
-    private final int MOON_SIZE = 4;
-
-    // Starting time (for calculating orbital angles)
+    private double timeScale = 2_000_000;
+    private final Color orbitColor = new Color(100, 100, 100, 70);
     private final long startTime;
+    private final JLabel speedLabel;
+    private final Sun sun;
+    private final Planet[] planets;
+    private final Moon[] moons;
 
-    // Buttons for controlling simulation speed
-    private JButton speedUpButton;
-    private JButton slowDownButton;
-    private JLabel speedLabel;
-
-    SolarSystemPane() {
-        super();
+    public SolarSystemPane() {
         setBackground(Color.BLACK);
+        setLayout(new FlowLayout(FlowLayout.LEFT));
         startTime = System.currentTimeMillis();
 
-        // Calculate orbital periods based on time scale
-        updatePeriods();
+        // Initialize sun
+        sun = new Sun("Sun", 30, Color.YELLOW);
+
+        // Initialize celestial bodies
+        planets = new Planet[]{
+                new Planet("Mercury", 6, 50, 7600530.0, new Color(200, 200, 200)),
+                new Planet("Venus", 10, 80, 19414166.0, new Color(255, 190, 100)),
+                new Planet("Earth", 12, 120, 31558149.0, new Color(50, 130, 255)),
+                new Planet("Mars", 8, 180, 59355036.0, new Color(255, 80, 30)),
+                new Planet("Jupiter", 24, 260, 374335776.0, new Color(255, 200, 150)),
+                new Planet("Saturn", 22, 320, 929596608.0, new Color(230, 220, 130)),
+                new Planet("Uranus", 16, 370, 2651370019.0, new Color(180, 230, 230)),
+                new Planet("Neptune", 16, 420, 5200418560.0, new Color(100, 150, 255))
+        };
+
+        moons = new Moon[]{
+                new Moon("Moon", 4, 20, 2360591.0, new Color(200, 200, 200), planets[2])
+        };
 
         // Add controls to change speed
-        setLayout(new FlowLayout(FlowLayout.LEFT));
-
-        speedUpButton = new JButton("Increase Speed");
-        slowDownButton = new JButton("Decrease Speed");
-        speedLabel = new JLabel("Time acceleration: " + (int)timeScale + "x");
+        JButton speedUpButton = new JButton("Increase Speed");
+        JButton slowDownButton = new JButton("Decrease Speed");
+        speedLabel = new JLabel("Time acceleration: " + (int) timeScale + "x");
         speedLabel.setForeground(Color.WHITE);
 
         add(speedUpButton);
         add(slowDownButton);
         add(speedLabel);
 
-        speedUpButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                timeScale *= 2;
-                updatePeriods();
-                updateSpeedLabel();
-            }
+        speedUpButton.addActionListener(e -> {
+            timeScale *= 2;
+            updateSpeedLabel();
         });
 
-        slowDownButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                timeScale /= 2;
-                if (timeScale < 1) timeScale = 1;
-                updatePeriods();
-                updateSpeedLabel();
-            }
+        slowDownButton.addActionListener(e -> {
+            timeScale = Math.max(1, timeScale / 2);
+            updateSpeedLabel();
         });
     }
 
-    // Method to update orbital periods based on time scale
-    private void updatePeriods() {
-        mercuryPeriod = MERCURY_REAL_PERIOD * 1000 / timeScale;
-        venusPeriod = VENUS_REAL_PERIOD * 1000 / timeScale;
-        earthPeriod = EARTH_REAL_PERIOD * 1000 / timeScale;
-        marsPeriod = MARS_REAL_PERIOD * 1000 / timeScale;
-        jupiterPeriod = JUPITER_REAL_PERIOD * 1000 / timeScale;
-        saturnPeriod = SATURN_REAL_PERIOD * 1000 / timeScale;
-        uranusPeriod = URANUS_REAL_PERIOD * 1000 / timeScale;
-        neptunePeriod = NEPTUNE_REAL_PERIOD * 1000 / timeScale;
-        moonPeriod = MOON_REAL_PERIOD * 1000 / timeScale;
-    }
-
-    // Method to update the speed label
     private void updateSpeedLabel() {
-        speedLabel.setText("Time acceleration: " + (int)timeScale + "x");
+        speedLabel.setText("Time acceleration: " + (int) timeScale + "x");
     }
 
-    // Calculate position of an object in orbit
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+        long elapsedTime = System.currentTimeMillis() - startTime;
+
+        Dimension size = getSize();
+        int centerX = size.width / 2;
+        int centerY = size.height / 2;
+
+        // Set sun position at the center
+        sun.setPosition(new Point(centerX, centerY));
+
+        // Draw sun
+        sun.drawCelestialBody(g2d);
+
+        g2d.setColor(orbitColor);
+        // Update and draw planets and orbits
+        for (Planet planet : planets) {
+            // Draw planet's orbit
+            planet.drawOrbit(g2d, centerX, centerY);
+
+            // Calculate and set planet position
+            Point position = calculatePosition(centerX, centerY, planet.getOrbitRadius(), calculateAngle(elapsedTime, planet.getPeriod(), timeScale));
+            planet.setPosition(position);
+
+            // Draw the planet
+            if (planet.getName().equals("Saturn")) {
+                planet.drawPlanetWithRing(g2d);
+            } else {
+                planet.drawCelestialBody(g2d);
+            }
+        }
+
+        // Draw moons
+        g2d.setColor(orbitColor);
+        for (Moon moon : moons) {
+            //Get parent planet position
+            Planet parent = moon.getParentPlanet();
+            Point parentPosition = parent.getPosition();
+
+            // Draw moon's orbit
+            moon.drawOrbit(g2d);
+
+            // Calculate and set moon position
+            Point moonPosition = calculatePosition(parentPosition.x, parentPosition.y, moon.getOrbitRadius(), calculateAngle(elapsedTime, moon.getPeriod(), timeScale));
+            moon.setPosition(moonPosition);
+
+            // Draw the moon
+            moon.drawCelestialBody(g2d);
+        }
+    }
+
     private Point calculatePosition(int centerX, int centerY, int radius, double angle) {
         int x = (int) (centerX + radius * Math.cos(angle));
         int y = (int) (centerY + radius * Math.sin(angle));
         return new Point(x, y);
     }
 
-    // Draw an orbit (circle)
-    private void drawOrbit(Graphics g, int centerX, int centerY, int radius) {
-        g.drawOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
-    }
-
-    // Draw a celestial body (planet or moon)
-    private void drawPlanet(Graphics g, Point position, int size, Color color) {
-        g.setColor(color);
-        g.fillOval(position.x - size/2, position.y - size/2, size, size);
-    }
-
-    // Draw a planet with rings (Saturn)
-    private void drawPlanetWithRing(Graphics g, Point position, int size, Color planetColor, Color ringColor) {
-        // Draw the planet
-        g.setColor(planetColor);
-        g.fillOval(position.x - size/2, position.y - size/2, size, size);
-
-        // Draw the rings
-        g.setColor(ringColor);
-        g.drawOval(position.x - size, position.y - size/4, size * 2, size/2);
-    }
-
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-
-        // Enable antialiasing for better graphics quality
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Get current window size
-        Dimension size = getSize();
-
-        // Calculate center of the system
-        centerX = size.width / 2;
-        centerY = size.height / 2;
-
-        // Calculate time elapsed since start
-        long currentTime = System.currentTimeMillis();
-        long elapsedTime = currentTime - startTime;
-
-        // Calculate angles for each planet
-        double mercuryAngle = (2 * Math.PI * elapsedTime) / mercuryPeriod;
-        double venusAngle = (2 * Math.PI * elapsedTime) / venusPeriod;
-        double earthAngle = (2 * Math.PI * elapsedTime) / earthPeriod;
-        double marsAngle = (2 * Math.PI * elapsedTime) / marsPeriod;
-        double jupiterAngle = (2 * Math.PI * elapsedTime) / jupiterPeriod;
-        double saturnAngle = (2 * Math.PI * elapsedTime) / saturnPeriod;
-        double uranusAngle = (2 * Math.PI * elapsedTime) / uranusPeriod;
-        double neptuneAngle = (2 * Math.PI * elapsedTime) / neptunePeriod;
-        double moonAngle = (2 * Math.PI * elapsedTime) / moonPeriod;
-
-        // Draw planet orbits
-        g2d.setColor(new Color(100, 100, 100, 70));
-        drawOrbit(g2d, centerX, centerY, MERCURY_ORBIT_RADIUS);
-        drawOrbit(g2d, centerX, centerY, VENUS_ORBIT_RADIUS);
-        drawOrbit(g2d, centerX, centerY, EARTH_ORBIT_RADIUS);
-        drawOrbit(g2d, centerX, centerY, MARS_ORBIT_RADIUS);
-        drawOrbit(g2d, centerX, centerY, JUPITER_ORBIT_RADIUS);
-        drawOrbit(g2d, centerX, centerY, SATURN_ORBIT_RADIUS);
-        drawOrbit(g2d, centerX, centerY, URANUS_ORBIT_RADIUS);
-        drawOrbit(g2d, centerX, centerY, NEPTUNE_ORBIT_RADIUS);
-
-        // Calculate planet positions
-        Point mercuryPos = calculatePosition(centerX, centerY, MERCURY_ORBIT_RADIUS, mercuryAngle);
-        Point venusPos = calculatePosition(centerX, centerY, VENUS_ORBIT_RADIUS, venusAngle);
-        Point earthPos = calculatePosition(centerX, centerY, EARTH_ORBIT_RADIUS, earthAngle);
-        Point marsPos = calculatePosition(centerX, centerY, MARS_ORBIT_RADIUS, marsAngle);
-        Point jupiterPos = calculatePosition(centerX, centerY, JUPITER_ORBIT_RADIUS, jupiterAngle);
-        Point saturnPos = calculatePosition(centerX, centerY, SATURN_ORBIT_RADIUS, saturnAngle);
-        Point uranusPos = calculatePosition(centerX, centerY, URANUS_ORBIT_RADIUS, uranusAngle);
-        Point neptunePos = calculatePosition(centerX, centerY, NEPTUNE_ORBIT_RADIUS, neptuneAngle);
-
-        // Draw Moon's orbit around Earth
-        g2d.setColor(new Color(100, 100, 100, 40));
-        drawOrbit(g2d, earthPos.x, earthPos.y, MOON_ORBIT_RADIUS);
-
-        // Calculate Moon's position relative to Earth
-        Point moonPos = calculatePosition(earthPos.x, earthPos.y, MOON_ORBIT_RADIUS, moonAngle);
-
-        // Draw the Sun
-        drawPlanet(g2d, new Point(centerX, centerY), SUN_SIZE, Color.YELLOW);
-
-        // Draw planets
-        drawPlanet(g2d, mercuryPos, MERCURY_SIZE, new Color(200, 200, 200));  // Mercury - gray
-        drawPlanet(g2d, venusPos, VENUS_SIZE, new Color(255, 190, 100));      // Venus - orange
-        drawPlanet(g2d, earthPos, EARTH_SIZE, new Color(50, 130, 255));       // Earth - blue
-        drawPlanet(g2d, marsPos, MARS_SIZE, new Color(255, 80, 30));          // Mars - red
-        drawPlanet(g2d, jupiterPos, JUPITER_SIZE, new Color(255, 200, 150));  // Jupiter - light orange
-        drawPlanetWithRing(g2d, saturnPos, SATURN_SIZE, new Color(230, 220, 130), new Color(210, 190, 120)); // Saturn with rings
-        drawPlanet(g2d, uranusPos, URANUS_SIZE, new Color(180, 230, 230));    // Uranus - light blue
-        drawPlanet(g2d, neptunePos, NEPTUNE_SIZE, new Color(100, 150, 255));  // Neptune - dark blue
-
-        // Draw the Moon
-        drawPlanet(g2d, moonPos, MOON_SIZE, new Color(200, 200, 200));        // Moon - gray
-
-        // Add planet information
-        g2d.setColor(Color.WHITE);
-        drawPlanet(g2d, new Point(70, 130), MERCURY_SIZE, new Color(200, 200, 200));
-        g2d.drawString("Mercury", 10, 140);
-        drawPlanet(g2d, new Point(70, 150), VENUS_SIZE, new Color(255, 190, 100));
-        g2d.drawString("Venus", 10, 160);
-        drawPlanet(g2d, new Point(70, 170), EARTH_SIZE, new Color(50, 130, 255));
-        g2d.drawString("Earth", 10, 180);
-        drawPlanet(g2d, new Point(70, 190), MARS_SIZE, new Color(255, 80, 30));
-        g2d.drawString("Mars", 10, 200);
-        drawPlanet(g2d, new Point(70, 210), JUPITER_SIZE, new Color(255, 200, 150));
-        g2d.drawString("Jupiter", 10, 220);
-        drawPlanetWithRing(g2d, new Point(70, 230), SATURN_SIZE, new Color(230, 220, 130), new Color(210, 190, 120));
-        g2d.drawString("Saturn", 10, 240);
-        drawPlanet(g2d, new Point(70, 250), URANUS_SIZE, new Color(180, 230, 230));
-        g2d.drawString("Uranus", 10, 260);
-        drawPlanet(g2d, new Point(70, 270), NEPTUNE_SIZE, new Color(100, 150, 255));
-        g2d.drawString("Neptune", 10, 280);
-        drawPlanet(g2d, new Point(70, 290), MOON_SIZE, new Color(200, 200, 200));
-        g2d.drawString("Moon", 10, 300);
+    public double calculateAngle(long elapsedTime, double period, double timeScale) {
+        return (2 * Math.PI * elapsedTime) / (period * 1000 / timeScale);
     }
 }
 
@@ -285,7 +251,6 @@ class SolarSystemPane extends JPanel {
 // SolarSystemWindow - class implementing the window containing
 // the animated solar system
 // ==============================================================
-
 class SolarSystemWindow extends JFrame {
     public SolarSystemWindow() {
         setContentPane(new SolarSystemPane());
