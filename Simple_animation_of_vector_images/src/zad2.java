@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.util.Random;
 import javax.swing.*;
 
 public class zad2 {
@@ -30,22 +31,25 @@ abstract class CelestialBody {
     protected final String name;
     protected final int size; // diameter of the body
     protected final int orbitRadius;
-    protected final double realPeriod; //period of the planet in seconds
+    protected final double period; //period of the planet in seconds
     protected final Color color;
     protected Point position; // Current position of the celestial body
+    protected final double initialAngle;
+
 
     public CelestialBody(String name, int size, int orbitRadius, double realPeriod, Color color) {
         this.name = name;
         this.size = size;
         this.orbitRadius = orbitRadius;
-        this.realPeriod = realPeriod;
+        this.period = realPeriod;
         this.color = color;
         this.position = new Point(0, 0); // Initialize position
+        this.initialAngle = new Random().nextDouble() * 2 * Math.PI;
     }
 
     public int getSize() { return size; }
     public int getOrbitRadius() { return orbitRadius; }
-    public double getPeriod() { return realPeriod; }
+    public double getPeriod() { return period; }
     public Color getColor() { return color; }
     public String getName() { return name; }
     public Point getPosition() { return position; }
@@ -206,7 +210,7 @@ class SolarSystemPane extends JPanel {
             planet.drawOrbit(g2d, centerX, centerY);
 
             // Calculate and set planet position
-            Point position = calculatePosition(centerX, centerY, planet.getOrbitRadius(), calculateAngle(elapsedTime, planet.getPeriod(), timeScale));
+            Point position = calculatePosition(centerX, centerY, planet.getOrbitRadius(), calculateAngle(elapsedTime, planet.getPeriod(), timeScale, planet.initialAngle));
             planet.setPosition(position);
 
             // Draw the planet
@@ -228,7 +232,7 @@ class SolarSystemPane extends JPanel {
             moon.drawOrbit(g2d);
 
             // Calculate and set moon position
-            Point moonPosition = calculatePosition(parentPosition.x, parentPosition.y, moon.getOrbitRadius(), calculateAngle(elapsedTime, moon.getPeriod(), timeScale));
+            Point moonPosition = calculatePosition(parentPosition.x, parentPosition.y, moon.getOrbitRadius(), calculateAngle(elapsedTime, moon.getPeriod(), timeScale, moon.initialAngle));
             moon.setPosition(moonPosition);
 
             // Draw the moon
@@ -242,8 +246,8 @@ class SolarSystemPane extends JPanel {
         return new Point(x, y);
     }
 
-    public double calculateAngle(long elapsedTime, double period, double timeScale) {
-        return (2 * Math.PI * elapsedTime) / (period * 1000 / timeScale);
+    public double calculateAngle(long elapsedTime, double period, double timeScale, double initialAngle) {
+        return (2 * Math.PI * elapsedTime) / (period * 1000 / timeScale) + initialAngle;
     }
 }
 

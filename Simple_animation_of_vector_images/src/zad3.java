@@ -219,10 +219,10 @@ class Ball {
 // ===============================================================
 class BilliardTable {
     // Constants
-    private final int NUM_BALLS = 15; // Number of balls on the table
+    private final int NUM_BALLS = 10; // Number of balls on the table
     private final double FRICTION = 0.7;   // Friction coefficient
     private final double MIN_VELOCITY = 0.1; // Minimum velocity before ball stops completely
-    private final double MAX_INITIAL_VELOCITY = 10000; // Maximum initial velocity of balls
+    private final double MAX_INITIAL_VELOCITY = 5000; // Maximum initial velocity of balls
 
     // Colors of the table and border
     private final Color TABLE_COLOR = new Color(0, 100, 0);
@@ -259,9 +259,15 @@ class BilliardTable {
 
         // Create balls with random positions, velocities, and colors
         for (int i = 0; i < NUM_BALLS; i++) {
+            // Calculate spawn area based on table dimensions
+            double spawnMinX = BORDER_WIDTH + BALL_RADIUS;
+            double spawnMaxX = width - BORDER_WIDTH - BALL_RADIUS;
+            double spawnMinY = BORDER_WIDTH + BALL_RADIUS;
+            double spawnMaxY = height - BORDER_WIDTH - BALL_RADIUS;
+
             // Initial random position for ball
-            double x = 100 + random.nextDouble() * 500; //TODO change to constants
-            double y = 100 + random.nextDouble() * 300; //TODO change to constants
+            double x = spawnMinX + random.nextDouble() * (spawnMaxX - spawnMinX);
+            double y = spawnMinY + random.nextDouble() * (spawnMaxY - spawnMinY);
 
             // Ensure balls don't overlap
             boolean overlap;
@@ -271,9 +277,9 @@ class BilliardTable {
                     double dx = x - ball.getX();
                     double dy = y - ball.getY();
                     double distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < ball.getRadius() + ball.getRadius()) {
-                        x = 100 + random.nextDouble() * 500;
-                        y = 100 + random.nextDouble() * 300;
+                    if (distance < 2 * BALL_RADIUS) { // Use actual ball diameter to prevent overlap
+                        x = spawnMinX + random.nextDouble() * (spawnMaxX - spawnMinX);
+                        y = spawnMinY + random.nextDouble() * (spawnMaxY - spawnMinY);
                         overlap = true;
                         break;
                     }
@@ -281,20 +287,20 @@ class BilliardTable {
             } while (overlap);
 
             //Initial random velocity for ball
-            double vx = (random.nextDouble() - 0.5) * (MAX_INITIAL_VELOCITY / 2); //TODO czemu jak to daje 0 a drugie nie to nie ida tylko w x
-            double vy = (random.nextDouble() - 0.5) * (MAX_INITIAL_VELOCITY / 2);
+            double vx = (random.nextDouble() - 0.5) * MAX_INITIAL_VELOCITY;
+            double vy = (random.nextDouble() - 0.5) * MAX_INITIAL_VELOCITY;
 
             //Initial color for ball
             Color color;
             if (i == 0) {
                 color = Color.WHITE; // White ball (cue ball)
-            } else if (i == 9) {
+            } else if (i == 8) {
                 color = Color.BLACK; // Black ball (8-ball)
             } else {
                 color = new Color(
-                        random.nextInt(156) + 100,
-                        random.nextInt(156) + 100,
-                        random.nextInt(156) + 100
+                        random.nextInt(255),
+                        random.nextInt(255),
+                        random.nextInt(255)
                 );
             }
 
@@ -403,7 +409,6 @@ class BilliardPane extends JPanel {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         billiardTable.draw(g2d);
     }
 }
@@ -425,7 +430,3 @@ class BilliardWindow extends JFrame {
         billiardPane.update(deltaTime);
     }
 }
-
-//TODO czy moze byc tak ze jak jest zbyt szybki to moze pominac zderzenie czy nawet przejsc przez sciane (chyba tak) jak to naprawic
-//TODO czemu nagle jest wolniejsze
-//TODO apply friction jest cos źle
