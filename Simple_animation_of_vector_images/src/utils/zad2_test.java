@@ -24,7 +24,7 @@ public class zad2_test {
         while (true) {
             try {
                 // Wait x milliseconds before the system is redisplayed
-                Thread.sleep(1);
+                Thread.sleep(5);
             } catch (InterruptedException e) {
                 System.out.println("Program interrupted");
             }

@@ -24,7 +24,7 @@ public class zad1 {
         while (true) {
             try {
                 // Wait a second before the clock is redisplayed
-                Thread.sleep(20);
+                Thread.sleep(5);
             } catch (InterruptedException e) {
                 System.out.println("Program interrupted");
             }
