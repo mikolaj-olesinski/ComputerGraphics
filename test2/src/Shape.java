@@ -154,6 +154,7 @@ class Circle extends Shape {
 
     @Override
     public void draw(Graphics2D g2d) {
+        System.out.println("Drawing circle at (" + centerX + ", " + centerY + ") with radius " + radius);
         g2d.setColor(color);
         g2d.drawOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
     }

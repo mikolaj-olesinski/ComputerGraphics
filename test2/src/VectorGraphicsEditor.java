@@ -1,14 +1,18 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.*;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
 
 
 
 public class VectorGraphicsEditor {
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Vector Graphics Editor");
+        JFrame frame = new JFrame("Zadanie 3 grafika");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 600);
 
@@ -24,8 +28,12 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
 
     private int startX, startY, endX, endY;
     private int lastX, lastY;
+    private int dragStartX, dragStartY;
+
     private Color currentColor = Color.BLACK;
     private boolean isDrawing = false;
+    private boolean isDraggingShape = false;
+
     private List<Shape> shapes = new ArrayList<>();
 
     private Shape selectedShape = null;
@@ -36,27 +44,14 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
     private JRadioButton lineButton, rectangleButton, circleButton;
     private JButton saveButton, loadButton, saveImageButton;
 
-
+    // Constructor
     public DrawingPane() {
         setLayout(new BorderLayout());
 
-        JPanel drawArea = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-
-                // Draw all shapes
-                for (Shape shape : shapes) {
-                    shape.draw(g2d);
-                }
-            }
-        };
-
-        add(drawArea, BorderLayout.CENTER);
         addMouseListener(this);
         addMouseMotionListener(this);
-        drawArea.setFocusable(true);
+        setFocusable(true);
+        requestFocusInWindow();
 
 
         // Create control panel
@@ -108,6 +103,18 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         add(controlPanel, BorderLayout.SOUTH);
     }
 
+    // Paint method to draw shapes
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+
+        // Rysuj wszystkie kształty
+        for (Shape shape : shapes) {
+            shape.draw(g2d);
+        }
+    }
+
     // Get current color from RGB fields
     private Color getCurrentColor() {
         try {
@@ -125,11 +132,22 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         }
     }
 
+    // Action listener for buttons
     @Override
     public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == saveButton) {
+            saveToFile();
+        } else if (e.getSource() == loadButton) {
+            loadFromFile();
+            repaint();
+        } else if (e.getSource() == saveImageButton) {
+            // Save image functionality (not implemented)
+            JOptionPane.showMessageDialog(this, "Save as Image functionality not implemented yet.");
+        }
 
     }
 
+    // Mouse event handlers
     @Override
     public void mousePressed(MouseEvent e) {
         startX = e.getX();
@@ -138,82 +156,51 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         // Left-click
         if (e.getButton() == MouseEvent.BUTTON1) {
 
+            // Check if we are clicking on an existing shape
             for (Shape shape : shapes) {
-                if (shape instanceof Line) {
-                    Line line = (Line) shape;
+                if (shape instanceof Line line) {
+                    //Check if we are clicking on the ends of the line
                     if (line.isNearEnd1(startX, startY)) {
                         selectedShape = line;
                         isDraggingEnd1 = true;
                         break;
-                    } else if (line.isNearEnd2(startX, startY)) {
+                    }
+                    // Check if we are clicking on the end2 of the line
+                    else if (line.isNearEnd2(startX, startY)) {
                         selectedShape = line;
                         isDraggingEnd2 = true;
                         break;
                     }
                 }
+
+                // If we click in the center of the shape
+                else if (selectedShape == null && shape.isNearCenter(startX, startY)) {
+                    selectedShape = shape;
+                    isDraggingShape = true;
+                    dragStartX = startX;
+                    dragStartY = startY;
+                    break;
+                }
             }
 
-            if (selectedShape != null) {
-                // If a shape is selected, start dragging
-                isDrawing = false;
-            } else {
-                // No shape selected, start drawing
+            // If we are not clicking on any shape and on and of the line
+            if (selectedShape == null) {
                 isDrawing = true;
                 currentColor = getCurrentColor();
             }
         }
 
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-
-        if (selectedShape != null && selectedShape instanceof Line) {
-            Line line = (Line) selectedShape;
-            if (isDraggingEnd1) {
-                line.setEnd1(e.getX(), e.getY());
-            } else {
-                line.setEnd2(e.getX(), e.getY());
+        else if (e.getButton() == MouseEvent.BUTTON3) {
+            // Right-click to delete
+            for (Shape shape : shapes) {
+                if (shape.isNearCenter(startX, startY)) {
+                    shapes.remove(shape);
+                    repaint();
+                }
             }
-
-            isDraggingEnd1 = false;
-            isDraggingEnd2 = false;
-            selectedShape = null;
-            lastX = 0;
-            lastY = 0;
-            repaint();
         }
+//        repaint();
 
-        else if (isDrawing) {
-            endX = e.getX();
-            endY = e.getY();
-
-            // Create shape based on selected type
-            if (lineButton.isSelected()) {
-                // Create line
-                System.out.println("Line drawn from (" + startX + ", " + startY + ") to (" + endX + ", " + endY + ")");
-                shapes.add(new Line(startX, startY, endX, endY, currentColor));
-            }else if (rectangleButton.isSelected()) {
-                // Create rectangle
-                int x = Math.min(startX, endX);
-                int y = Math.min(startY, endY);
-                int w = Math.abs(endX - startX);
-                int h = Math.abs(endY - startY);
-                System.out.println("Rectangle drawn from (" + startX + ", " + startY + ") to (" + endX + ", " + endY + ")");
-                shapes.add(new Rectangle(x, y, w, h, currentColor));
-            } else if (circleButton.isSelected()) {
-                // Create circle
-                System.out.println("Circle drawn with center at (" + startX + ", " + startY + ") and radius " +
-                        Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2)));
-                int radius = (int) Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-                shapes.add(new Circle(startX, startY, radius, currentColor));
-            }
-
-            isDrawing = false;
-            lastX = 0;
-            lastY = 0;
-            repaint();
-        }
     }
 
     @Override
@@ -223,29 +210,57 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         Graphics2D g2d = (Graphics2D) getGraphics();
         g2d.setXORMode(getBackground());
 
+        //Dragging shape
+        if (selectedShape != null && isDraggingShape) {
 
-        if(selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
+            //Calculate the difference in position
+            int dx = currentX - lastX;
+            int dy = currentY - lastY;
+
+
+            if (lastX != 0 || lastY != 0) {
+                //Delete the previous shape
+                selectedShape.draw(g2d);
+
+                // Move the shape
+                selectedShape.move(dx, dy);
+
+                //Draw the new shape
+                selectedShape.draw(g2d);
+            }
+
+            // Update the last position
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        //If we drag the end of the line
+        else if(selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
             Line line = (Line) selectedShape;
             g2d.setColor(line.getColor());
 
             Point end1 = line.getEnd1();
             Point end2 = line.getEnd2();
 
-            // Usuń poprzednią linię
+            // Delete the previous line
             if (lastX != 0 || lastY != 0) {
                 if (isDraggingEnd1) {
-                    g2d.drawLine(lastX, lastY, end1.x, end1.y);
-                } else {
+                    //if we are dragging the end1 of the line
+                    System.out.println("Dragging end1");
+                    g2d.drawLine(lastX, lastY, end2.x, end2.y);
+                }
+                else {
+                    //if we are dragging the end2 of the line
                     g2d.drawLine(end1.x, end1.y, lastX, lastY);
                 }
             } else {
-                // Pierwszy raz - rysujemy oryginalną linię aby ją usunąć
+                //If the first time we delete the original line
                 g2d.drawLine(end1.x, end1.y, end2.x, end2.y);
             }
 
-            // Rysuj nową linię
+            // Draw the new line
             if (isDraggingEnd1) {
-                g2d.drawLine(currentX, currentY, end1.x, end1.y);
+                g2d.drawLine(currentX, currentY, end2.x, end2.y);
             } else {
                 g2d.drawLine(end1.x, end1.y, currentX, currentY);
             }
@@ -293,6 +308,60 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         g2d.dispose();
     }
 
+    @Override
+    public void mouseReleased(MouseEvent e) {
+
+        if (isDraggingShape) {
+            // Zakończ przesuwanie kształtu
+            isDraggingShape = false;
+            selectedShape = null;
+        }
+        else if (selectedShape != null && selectedShape instanceof Line) {
+            Line line = (Line) selectedShape;
+            if (isDraggingEnd1) {
+                line.setEnd1(e.getX(), e.getY());
+            } else {
+                line.setEnd2(e.getX(), e.getY());
+            }
+
+            isDraggingEnd1 = false;
+            isDraggingEnd2 = false;
+            selectedShape = null;
+        }
+
+        else if (isDrawing) {
+            endX = e.getX();
+            endY = e.getY();
+
+            // Create shape based on selected type
+            if (lineButton.isSelected()) {
+                // Create line
+                System.out.println("Line drawn from (" + startX + ", " + startY + ") to (" + endX + ", " + endY + ")");
+                shapes.add(new Line(startX, startY, endX, endY, currentColor));
+            }else if (rectangleButton.isSelected()) {
+                // Create rectangle
+                int x = Math.min(startX, endX);
+                int y = Math.min(startY, endY);
+                int w = Math.abs(endX - startX);
+                int h = Math.abs(endY - startY);
+                System.out.println("Rectangle drawn from (" + startX + ", " + startY + ") to (" + endX + ", " + endY + ")");
+                shapes.add(new Rectangle(x, y, w, h, currentColor));
+            } else if (circleButton.isSelected()) {
+                // Create circle
+                int radius = (int) Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                System.out.println("Circle drawn with center (" + startX + ", " + startY + ") and radius " + radius);
+                shapes.add(new Circle(startX, startY, radius, currentColor));
+            }
+
+            isDrawing = false;
+        }
+
+        repaint();
+        lastX = 0;
+        lastY = 0;
+    }
+
+
 
     @Override
     public void mouseClicked(MouseEvent e) {
@@ -312,5 +381,106 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
     @Override
     public void mouseMoved(MouseEvent e) {
         // Nothing to do
+    }
+
+
+    private void saveToFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try (PrintWriter writer = new PrintWriter(fileChooser.getSelectedFile())) {
+                for (Shape shape : shapes) {
+                    writer.println(shape.toFileString());
+                }
+                JOptionPane.showMessageDialog(this, "File saved successfully!");
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error saving file: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void loadFromFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(fileChooser.getSelectedFile()))) {
+                shapes.clear();
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    String shapeType = parts[0];
+                    int x = Integer.parseInt(parts[1]);
+                    int y = Integer.parseInt(parts[2]);
+
+                    int r = Integer.parseInt(parts[parts.length - 3]);
+                    int g = Integer.parseInt(parts[parts.length - 2]);
+                    int b = Integer.parseInt(parts[parts.length - 1]);
+
+                    Color color = new Color(r, g, b);
+
+                    switch (shapeType) {
+                        case "LINE":
+                            int endX = Integer.parseInt(parts[3]);
+                            int endY = Integer.parseInt(parts[4]);
+                            shapes.add(new Line(x, y, endX, endY, color));
+                            break;
+                        case "RECTANGLE":
+                            int width = Integer.parseInt(parts[3]);
+                            int height = Integer.parseInt(parts[4]);
+                            shapes.add(new Rectangle(x, y, width, height, color));
+                            break;
+                        case "CIRCLE":
+                            int radius = Integer.parseInt(parts[3]);
+                            shapes.add(new Circle(x, y, radius, color));
+                            break;
+                        default:
+                            System.out.println("Unknown shape type: " + shapeType);
+                    }
+                }
+            } catch (IOException | NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Error loading file: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+
+        }
+    }
+
+    private void saveAsImage() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = image.createGraphics();
+
+            // Draw white background
+            g2d.setColor(Color.WHITE);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+
+            // Draw all shapes
+            for (Shape shape : shapes) {
+                shape.draw(g2d);
+            }
+
+            g2d.dispose();
+
+            try {
+                File file = fileChooser.getSelectedFile();
+                String name = file.getName();
+                String ext = name.substring(name.lastIndexOf('.') + 1).toLowerCase();
+                if (!ext.equals("png") && !ext.equals("jpg") && !ext.equals("jpeg")) {
+                    file = new File(file.getAbsolutePath() + ".png");
+                    ext = "png";
+                }
+
+                ImageIO.write(image, ext, file);
+                JOptionPane.showMessageDialog(this, "Image saved successfully!");
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error saving image: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }
