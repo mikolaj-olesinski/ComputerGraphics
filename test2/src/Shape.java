@@ -154,13 +154,14 @@ class Circle extends Shape {
 
     @Override
     public void draw(Graphics2D g2d) {
-        System.out.println("Drawing circle at (" + centerX + ", " + centerY + ") with radius " + radius);
         g2d.setColor(color);
         g2d.drawOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
     }
 
     @Override
     public boolean isNearCenter(int x, int y) {
+        // Check if point is near the center of the circle
+        System.out.println("Checking if point (" + x + ", " + y + ") is near circle center (" + centerX + ", " + centerY + ")");
         return Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)) <= SENSITIVITY;
     }
 

@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
@@ -28,7 +27,6 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
 
     private int startX, startY, endX, endY;
     private int lastX, lastY;
-    private int dragStartX, dragStartY;
 
     private Color currentColor = Color.BLACK;
     private boolean isDrawing = false;
@@ -40,9 +38,13 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
     private boolean isDraggingEnd1 = false;
     private boolean isDraggingEnd2 = false;
 
+    private JPanel controlPanel;
     private JTextField redField, greenField, blueField;
     private JRadioButton lineButton, rectangleButton, circleButton;
     private JButton saveButton, loadButton, saveImageButton;
+
+
+    private boolean canDrawOutsideWindow = false;
 
     // Constructor
     public DrawingPane() {
@@ -53,9 +55,7 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         setFocusable(true);
         requestFocusInWindow();
 
-
-        // Create control panel
-        JPanel controlPanel = new JPanel();
+        controlPanel = new JPanel();
         controlPanel.setLayout(new FlowLayout());
 
         // Shape selection controls
@@ -132,6 +132,21 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         }
     }
 
+    private int constrainX(int x) {
+        if (!canDrawOutsideWindow) {
+            return Math.max(0, Math.min(x, getWidth()));
+        }
+        return x;
+    }
+
+    private int constrainY(int y) {
+        if (!canDrawOutsideWindow) {
+            // Uwzględnij obszar rysowania bez panelu kontrolnego
+            int drawingAreaHeight = getHeight() - controlPanel.getHeight();
+            return Math.max(0, Math.min(y, drawingAreaHeight));
+        }
+        return y;
+    }
     // Action listener for buttons
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -141,8 +156,7 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
             loadFromFile();
             repaint();
         } else if (e.getSource() == saveImageButton) {
-            // Save image functionality (not implemented)
-            JOptionPane.showMessageDialog(this, "Save as Image functionality not implemented yet.");
+            saveAsImage();
         }
 
     }
@@ -150,8 +164,8 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
     // Mouse event handlers
     @Override
     public void mousePressed(MouseEvent e) {
-        startX = e.getX();
-        startY = e.getY();
+        startX = constrainX(e.getX());
+        startY = constrainY(e.getY());
 
         // Left-click
         if (e.getButton() == MouseEvent.BUTTON1) {
@@ -174,11 +188,9 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
                 }
 
                 // If we click in the center of the shape
-                else if (selectedShape == null && shape.isNearCenter(startX, startY)) {
+                if (selectedShape == null && shape.isNearCenter(startX, startY)) {
                     selectedShape = shape;
                     isDraggingShape = true;
-                    dragStartX = startX;
-                    dragStartY = startY;
                     break;
                 }
             }
@@ -192,85 +204,52 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
 
         else if (e.getButton() == MouseEvent.BUTTON3) {
             // Right-click to delete
+            Shape toRemove = null;
             for (Shape shape : shapes) {
                 if (shape.isNearCenter(startX, startY)) {
-                    shapes.remove(shape);
-                    repaint();
+                    toRemove = shape;
+                    break; //we found the shape to remove
                 }
             }
+
+            if (toRemove != null) {
+                shapes.remove(toRemove); // delete the shape
+                repaint();
+            }
         }
+
 //        repaint();
 
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        int currentX = e.getX();
-        int currentY = e.getY();
+        int currentX = constrainX(e.getX());
+        int currentY = constrainY(e.getY());
         Graphics2D g2d = (Graphics2D) getGraphics();
         g2d.setXORMode(getBackground());
 
         //Dragging shape
         if (selectedShape != null && isDraggingShape) {
-
-            //Calculate the difference in position
-            int dx = currentX - lastX;
-            int dy = currentY - lastY;
-
-
-            if (lastX != 0 || lastY != 0) {
-                //Delete the previous shape
-                selectedShape.draw(g2d);
-
-                // Move the shape
-                selectedShape.move(dx, dy);
-
-                //Draw the new shape
-                selectedShape.draw(g2d);
-            }
-
-            // Update the last position
-            lastX = currentX;
-            lastY = currentY;
+            Point center = selectedShape.getCenter();
+            int dx = currentX - center.x;
+            int dy = currentY - center.y;
+            selectedShape.move(dx, dy);
+            repaint();
         }
-
-        //If we drag the end of the line
-        else if(selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
+        else if (selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
             Line line = (Line) selectedShape;
-            g2d.setColor(line.getColor());
-
-            Point end1 = line.getEnd1();
-            Point end2 = line.getEnd2();
-
-            // Delete the previous line
-            if (lastX != 0 || lastY != 0) {
-                if (isDraggingEnd1) {
-                    //if we are dragging the end1 of the line
-                    System.out.println("Dragging end1");
-                    g2d.drawLine(lastX, lastY, end2.x, end2.y);
-                }
-                else {
-                    //if we are dragging the end2 of the line
-                    g2d.drawLine(end1.x, end1.y, lastX, lastY);
-                }
-            } else {
-                //If the first time we delete the original line
-                g2d.drawLine(end1.x, end1.y, end2.x, end2.y);
-            }
-
-            // Draw the new line
             if (isDraggingEnd1) {
-                g2d.drawLine(currentX, currentY, end2.x, end2.y);
+                line.setEnd1(currentX, currentY);
             } else {
-                g2d.drawLine(end1.x, end1.y, currentX, currentY);
+                line.setEnd2(currentX, currentY);
             }
-
-            lastX = currentX;
-            lastY = currentY;
+            repaint();
         }
 
         if (isDrawing){
-            // Usuń poprzednią tymczasową linię (jeśli istnieje)
+            g2d.setColor(currentColor);
+            // Delete the previous shape (if exists)
             if (lastX != 0 || lastY != 0) {
                 if (lineButton.isSelected()) {
                     g2d.drawLine(startX, startY, lastX, lastY);
@@ -286,7 +265,7 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
                 }
             }
 
-            // Narysuj nową tymczasową linię
+            //Draw the new shape
             if (lineButton.isSelected()) {
                 g2d.drawLine(startX, startY, currentX, currentY);
             } else if (rectangleButton.isSelected()) {
@@ -300,13 +279,14 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
                 g2d.drawOval(startX - radius, startY - radius, radius * 2, radius * 2);
             }
 
-            // Zapamiętaj aktualną pozycję
+            //Remember the last position
             lastX = currentX;
             lastY = currentY;
         }
 
         g2d.dispose();
     }
+
 
     @Override
     public void mouseReleased(MouseEvent e) {
@@ -330,8 +310,8 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         }
 
         else if (isDrawing) {
-            endX = e.getX();
-            endY = e.getY();
+            endX = constrainX(e.getX());
+            endY = constrainY(e.getY());
 
             // Create shape based on selected type
             if (lineButton.isSelected()) {
@@ -483,4 +463,117 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
             }
         }
     }
+
+//    //wersja 1
+//    @Override
+//    public void mouseDragged(MouseEvent e) {
+//        int currentX = constrainX(e.getX());
+//        int currentY = constrainY(e.getY());
+//        Graphics2D g2d = (Graphics2D) getGraphics();
+//        g2d.setXORMode(getBackground());
+//
+//        //Dragging shape
+//        if (selectedShape != null && isDraggingShape) {
+//
+//            //Calculate the difference in position
+//            int dx = currentX - lastX;
+//            int dy = currentY - lastY;
+//
+//
+//            if (lastX != 0 || lastY != 0) {
+//                //Delete the previous shape
+//                selectedShape.draw(g2d);
+//                // Move the shape
+//                selectedShape.move(dx, dy);
+//            }
+//            else {
+//                //If the first time we delete the original shape
+//                selectedShape.draw(g2d);
+//            }
+//
+//            //Draw the new shape
+//            selectedShape.draw(g2d);
+//
+//            // Update the last position
+//            lastX = currentX;
+//            lastY = currentY;
+//        }
+//
+//        //If we drag the end of the line
+//        else if(selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
+//            Line line = (Line) selectedShape;
+//            g2d.setColor(line.getColor());
+//
+//            Point end1 = line.getEnd1();
+//            Point end2 = line.getEnd2();
+//
+//            // Delete the previous line
+//            if (lastX != 0 || lastY != 0) {
+//                if (isDraggingEnd1) {
+//                    //if we are dragging the end1 of the line
+//                    System.out.println("Dragging end1");
+//                    g2d.drawLine(lastX, lastY, end2.x, end2.y);
+//                }
+//                else {
+//                    //if we are dragging the end2 of the line
+//                    g2d.drawLine(end1.x, end1.y, lastX, lastY);
+//                }
+//            } else {
+//                //If the first time we delete the original line
+//                g2d.drawLine(end1.x, end1.y, end2.x, end2.y);
+//            }
+//
+//            // Draw the new line
+//            if (isDraggingEnd1) {
+//                g2d.drawLine(currentX, currentY, end2.x, end2.y);
+//            } else {
+//                g2d.drawLine(end1.x, end1.y, currentX, currentY);
+//            }
+//
+//            lastX = currentX;
+//            lastY = currentY;
+//        }
+//
+//        if (isDrawing){
+//            g2d.setColor(currentColor);
+//            // Delete the previous shape (if exists)
+//            if (lastX != 0 || lastY != 0) {
+//                if (lineButton.isSelected()) {
+//                    g2d.drawLine(startX, startY, lastX, lastY);
+//                } else if (rectangleButton.isSelected()) {
+//                    int x = Math.min(startX, lastX);
+//                    int y = Math.min(startY, lastY);
+//                    int w = Math.abs(lastX - startX);
+//                    int h = Math.abs(lastY - startY);
+//                    g2d.drawRect(x, y, w, h);
+//                } else if (circleButton.isSelected()) {
+//                    int radius = (int) Math.sqrt(Math.pow(lastX - startX, 2) + Math.pow(lastY - startY, 2));
+//                    g2d.drawOval(startX - radius, startY - radius, radius * 2, radius * 2);
+//                }
+//            }
+//
+//            //Draw the new shape
+//            if (lineButton.isSelected()) {
+//                g2d.drawLine(startX, startY, currentX, currentY);
+//            } else if (rectangleButton.isSelected()) {
+//                int x = Math.min(startX, currentX);
+//                int y = Math.min(startY, currentY);
+//                int w = Math.abs(currentX - startX);
+//                int h = Math.abs(currentY - startY);
+//                g2d.drawRect(x, y, w, h);
+//            } else if (circleButton.isSelected()) {
+//                int radius = (int) Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+//                g2d.drawOval(startX - radius, startY - radius, radius * 2, radius * 2);
+//            }
+//
+//            //Remember the last position
+//            lastX = currentX;
+//            lastY = currentY;
+//        }
+//
+//        g2d.dispose();
+//    }
+
+
+
 }

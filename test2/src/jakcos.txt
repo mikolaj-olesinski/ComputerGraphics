@@ -1,0 +1,182 @@
+
+
+    //wersja 1
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        int currentX = constrainX(e.getX());
+        int currentY = constrainY(e.getY());
+        Graphics2D g2d = (Graphics2D) getGraphics();
+        g2d.setXORMode(getBackground());
+
+        //Dragging shape
+        if (selectedShape != null && isDraggingShape) {
+
+            //Calculate the difference in position
+            int dx = currentX - lastX;
+            int dy = currentY - lastY;
+
+
+            if (lastX != 0 || lastY != 0) {
+                //Delete the previous shape
+                selectedShape.draw(g2d);
+                // Move the shape
+                selectedShape.move(dx, dy);
+            }
+            else {
+                //If the first time we delete the original shape
+                selectedShape.draw(g2d);
+            }
+
+            //Draw the new shape
+            selectedShape.draw(g2d);
+
+            // Update the last position
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        //If we drag the end of the line
+        else if(selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
+            Line line = (Line) selectedShape;
+            g2d.setColor(line.getColor());
+
+            Point end1 = line.getEnd1();
+            Point end2 = line.getEnd2();
+
+            // Delete the previous line
+            if (lastX != 0 || lastY != 0) {
+                if (isDraggingEnd1) {
+                    //if we are dragging the end1 of the line
+                    System.out.println("Dragging end1");
+                    g2d.drawLine(lastX, lastY, end2.x, end2.y);
+                }
+                else {
+                    //if we are dragging the end2 of the line
+                    g2d.drawLine(end1.x, end1.y, lastX, lastY);
+                }
+            } else {
+                //If the first time we delete the original line
+                g2d.drawLine(end1.x, end1.y, end2.x, end2.y);
+            }
+
+            // Draw the new line
+            if (isDraggingEnd1) {
+                g2d.drawLine(currentX, currentY, end2.x, end2.y);
+            } else {
+                g2d.drawLine(end1.x, end1.y, currentX, currentY);
+            }
+
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        if (isDrawing){
+            // Delete the previous shape (if exists)
+            if (lastX != 0 || lastY != 0) {
+                if (lineButton.isSelected()) {
+                    g2d.drawLine(startX, startY, lastX, lastY);
+                } else if (rectangleButton.isSelected()) {
+                    int x = Math.min(startX, lastX);
+                    int y = Math.min(startY, lastY);
+                    int w = Math.abs(lastX - startX);
+                    int h = Math.abs(lastY - startY);
+                    g2d.drawRect(x, y, w, h);
+                } else if (circleButton.isSelected()) {
+                    int radius = (int) Math.sqrt(Math.pow(lastX - startX, 2) + Math.pow(lastY - startY, 2));
+                    g2d.drawOval(startX - radius, startY - radius, radius * 2, radius * 2);
+                }
+            }
+
+            //Draw the new shape
+            if (lineButton.isSelected()) {
+                g2d.drawLine(startX, startY, currentX, currentY);
+            } else if (rectangleButton.isSelected()) {
+                int x = Math.min(startX, currentX);
+                int y = Math.min(startY, currentY);
+                int w = Math.abs(currentX - startX);
+                int h = Math.abs(currentY - startY);
+                g2d.drawRect(x, y, w, h);
+            } else if (circleButton.isSelected()) {
+                int radius = (int) Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                g2d.drawOval(startX - radius, startY - radius, radius * 2, radius * 2);
+            }
+
+            //Remember the last position
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        g2d.dispose();
+    }
+
+
+
+
+
+
+
+
+//wersja 2
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        int currentX = constrainX(e.getX());
+        int currentY = constrainY(e.getY());
+        Graphics2D g2d = (Graphics2D) getGraphics();
+        g2d.setXORMode(getBackground());
+
+        //Dragging shape
+        if (selectedShape != null && isDraggingShape) {
+            Point center = selectedShape.getCenter();
+            int dx = currentX - center.x;
+            int dy = currentY - center.y;
+            selectedShape.move(dx, dy);
+            repaint();
+        }
+        else if (selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
+            Line line = (Line) selectedShape;
+            if (isDraggingEnd1) {
+                line.setEnd1(currentX, currentY);
+            } else {
+                line.setEnd2(currentX, currentY);
+            }
+            repaint();
+        }
+
+        if (isDrawing){
+            // Delete the previous shape (if exists)
+            if (lastX != 0 || lastY != 0) {
+                if (lineButton.isSelected()) {
+                    g2d.drawLine(startX, startY, lastX, lastY);
+                } else if (rectangleButton.isSelected()) {
+                    int x = Math.min(startX, lastX);
+                    int y = Math.min(startY, lastY);
+                    int w = Math.abs(lastX - startX);
+                    int h = Math.abs(lastY - startY);
+                    g2d.drawRect(x, y, w, h);
+                } else if (circleButton.isSelected()) {
+                    int radius = (int) Math.sqrt(Math.pow(lastX - startX, 2) + Math.pow(lastY - startY, 2));
+                    g2d.drawOval(startX - radius, startY - radius, radius * 2, radius * 2);
+                }
+            }
+
+            //Draw the new shape
+            if (lineButton.isSelected()) {
+                g2d.drawLine(startX, startY, currentX, currentY);
+            } else if (rectangleButton.isSelected()) {
+                int x = Math.min(startX, currentX);
+                int y = Math.min(startY, currentY);
+                int w = Math.abs(currentX - startX);
+                int h = Math.abs(currentY - startY);
+                g2d.drawRect(x, y, w, h);
+            } else if (circleButton.isSelected()) {
+                int radius = (int) Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                g2d.drawOval(startX - radius, startY - radius, radius * 2, radius * 2);
+            }
+
+            //Remember the last position
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        g2d.dispose();
+    }
