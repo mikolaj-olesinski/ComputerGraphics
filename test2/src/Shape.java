@@ -11,6 +11,8 @@ abstract class Shape {
     public abstract void draw(Graphics2D g2d);
     public abstract boolean isNearCenter(int x, int y);
     public abstract void move(int dx, int dy);
+    // Nowa metoda move z ograniczeniami obszaru
+    public abstract void move(int dx, int dy, int maxWidth, int maxHeight, int controlPanelHeight);
     public abstract String toFileString();
     public abstract Point getCenter();
 
@@ -68,12 +70,89 @@ class Line extends Shape {
         this.y2 = y;
     }
 
+    // Ograniczone ustawienie końca 1 linii
+    public void setEnd1(int x, int y, int maxWidth, int maxHeight, int controlPanelHeight) {
+        this.x1 = Math.max(0, Math.min(x, maxWidth));
+        this.y1 = Math.max(0, Math.min(y, maxHeight - controlPanelHeight));
+    }
+
+    // Ograniczone ustawienie końca 2 linii
+    public void setEnd2(int x, int y, int maxWidth, int maxHeight, int controlPanelHeight) {
+        this.x2 = Math.max(0, Math.min(x, maxWidth));
+        this.y2 = Math.max(0, Math.min(y, maxHeight - controlPanelHeight));
+    }
+
     @Override
     public void move(int dx, int dy) {
         x1 += dx;
         y1 += dy;
         x2 += dx;
         y2 += dy;
+    }
+
+    @Override
+    public void move(int dx, int dy, int maxWidth, int maxHeight, int controlPanelHeight) {
+        int newX1 = x1 + dx;
+        int newY1 = y1 + dy;
+        int newX2 = x2 + dx;
+        int newY2 = y2 + dy;
+
+        // Sprawdź czy po przesunięciu linia nie wyjdzie poza obszar rysowania
+        if (newX1 >= 0 && newX1 <= maxWidth && newX2 >= 0 && newX2 <= maxWidth &&
+                newY1 >= 0 && newY1 <= maxHeight - controlPanelHeight &&
+                newY2 >= 0 && newY2 <= maxHeight - controlPanelHeight) {
+            x1 = newX1;
+            y1 = newY1;
+            x2 = newX2;
+            y2 = newY2;
+        } else {
+            // Jeśli wychodzi poza ekran, przesuń maksymalnie jak się da
+            if (newX1 < 0) {
+                int shift = -newX1;
+                newX1 += shift;
+                newX2 += shift;
+            } else if (newX2 < 0) {
+                int shift = -newX2;
+                newX1 += shift;
+                newX2 += shift;
+            }
+
+            if (newX1 > maxWidth) {
+                int shift = newX1 - maxWidth;
+                newX1 -= shift;
+                newX2 -= shift;
+            } else if (newX2 > maxWidth) {
+                int shift = newX2 - maxWidth;
+                newX1 -= shift;
+                newX2 -= shift;
+            }
+
+            if (newY1 < 0) {
+                int shift = -newY1;
+                newY1 += shift;
+                newY2 += shift;
+            } else if (newY2 < 0) {
+                int shift = -newY2;
+                newY1 += shift;
+                newY2 += shift;
+            }
+
+            int maxY = maxHeight - controlPanelHeight;
+            if (newY1 > maxY) {
+                int shift = newY1 - maxY;
+                newY1 -= shift;
+                newY2 -= shift;
+            } else if (newY2 > maxY) {
+                int shift = newY2 - maxY;
+                newY1 -= shift;
+                newY2 -= shift;
+            }
+
+            x1 = newX1;
+            y1 = newY1;
+            x2 = newX2;
+            y2 = newY2;
+        }
     }
 
     @Override
@@ -129,6 +208,35 @@ class Rectangle extends Shape {
     }
 
     @Override
+    public void move(int dx, int dy, int maxWidth, int maxHeight, int controlPanelHeight) {
+        int newX = x + dx;
+        int newY = y + dy;
+
+        // Check if rectangle is within bounds after moving
+        if (newX >= 0 && newX + width <= maxWidth &&
+                newY >= 0 && newY + height <= maxHeight - controlPanelHeight) {
+            x = newX;
+            y = newY;
+        } else {
+            // If it goes out of bounds, move as much as possible
+            if (newX < 0) {
+                newX = 0;
+            } else if (newX + width > maxWidth) {
+                newX = maxWidth - width;
+            }
+
+            if (newY < 0) {
+                newY = 0;
+            } else if (newY + height > maxHeight - controlPanelHeight) {
+                newY = (maxHeight - controlPanelHeight) - height;
+            }
+
+            x = newX;
+            y = newY;
+        }
+    }
+
+    @Override
     public String toFileString() {
         return "RECTANGLE," + x + "," + y + "," + width + "," + height + "," +
                 color.getRed() + "," + color.getGreen() + "," + color.getBlue();
@@ -161,7 +269,6 @@ class Circle extends Shape {
     @Override
     public boolean isNearCenter(int x, int y) {
         // Check if point is near the center of the circle
-        System.out.println("Checking if point (" + x + ", " + y + ") is near circle center (" + centerX + ", " + centerY + ")");
         return Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)) <= SENSITIVITY;
     }
 
@@ -169,6 +276,35 @@ class Circle extends Shape {
     public void move(int dx, int dy) {
         centerX += dx;
         centerY += dy;
+    }
+
+    @Override
+    public void move(int dx, int dy, int maxWidth, int maxHeight, int controlPanelHeight) {
+        int newX = centerX + dx;
+        int newY = centerY + dy;
+
+        //Check if circle is within bounds after moving
+        if (newX - radius >= 0 && newX + radius <= maxWidth &&
+                newY - radius >= 0 && newY + radius <= maxHeight - controlPanelHeight) {
+            centerX = newX;
+            centerY = newY;
+        } else {
+            // If it goes out of bounds, move as much as possible
+            if (newX - radius < 0) {
+                newX = radius;
+            } else if (newX + radius > maxWidth) {
+                newX = maxWidth - radius;
+            }
+
+            if (newY - radius < 0) {
+                newY = radius;
+            } else if (newY + radius > maxHeight - controlPanelHeight) {
+                newY = (maxHeight - controlPanelHeight) - radius;
+            }
+
+            centerX = newX;
+            centerY = newY;
+        }
     }
 
     @Override
