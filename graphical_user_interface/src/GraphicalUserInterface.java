@@ -13,7 +13,7 @@ public class GraphicalUserInterface {
     public static void main(String[] args) {
         JFrame frame = new JFrame("Zadanie 3 grafika");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
+        frame.setSize(900, 600);
 
         Container contentPane = frame.getContentPane();
         contentPane.add(new DrawingPane());
@@ -25,7 +25,7 @@ public class GraphicalUserInterface {
 
 class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, ActionListener {
 
-    private int startX, startY, endX, endY;
+    private int startX, startY;
     private int lastX, lastY;
 
     private Color currentColor = Color.BLACK;
@@ -44,7 +44,7 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
     private JButton saveButton, loadButton, saveImageButton;
 
 
-    private boolean canDrawOutsideWindow = false;
+    private boolean canDrawOutsideWindow = true;
 
     // Constructor
     public DrawingPane() {
@@ -109,7 +109,6 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
-        // Rysuj wszystkie kształty
         for (Shape shape : shapes) {
             shape.draw(g2d);
         }
@@ -123,13 +122,13 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
             int b = Integer.parseInt(blueField.getText());
 
             if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
-                JOptionPane.showMessageDialog(this, "Wartości RGB muszą być w zakresie 0-255!", "Błąd", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Wartości RGB muszą być w zakresie 0-255", "Błąd", JOptionPane.ERROR_MESSAGE);
                 return Color.BLACK;
             }
 
             return new Color(r, g, b);
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Proszę wprowadzić poprawne liczby całkowite dla RGB!", "Błąd", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Proszę wprowadzić poprawne liczby całkowite dla RGB", "Błąd", JOptionPane.ERROR_MESSAGE);
             return Color.BLACK;
         }
     }
@@ -144,12 +143,12 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
 
     private int constrainY(int y) {
         if (!canDrawOutsideWindow) {
-            // Uwzględnij obszar rysowania bez panelu kontrolnego
             int drawingAreaHeight = getHeight() - controlPanel.getHeight();
             return Math.max(0, Math.min(y, drawingAreaHeight));
         }
         return y;
     }
+
     // Action listener for buttons
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -237,7 +236,10 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
             Point center = selectedShape.getCenter();
             int dx = currentX - center.x;
             int dy = currentY - center.y;
-            selectedShape.move(dx, dy);
+
+            if (!canDrawOutsideWindow) selectedShape.move(dx, dy, getWidth(), getHeight(), controlPanel.getHeight());
+            else selectedShape.move(dx, dy);
+
             repaint();
         }
         else if (selectedShape != null && (isDraggingEnd1 || isDraggingEnd2)) {
@@ -295,7 +297,6 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
     public void mouseReleased(MouseEvent e) {
 
         if (isDraggingShape) {
-            // Zakończ przesuwanie kształtu
             isDraggingShape = false;
             selectedShape = null;
         }
@@ -313,8 +314,8 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         }
 
         else if (isDrawing) {
-            endX = constrainX(e.getX());
-            endY = constrainY(e.getY());
+            int endX = constrainX(e.getX());
+            int endY = constrainY(e.getY());
 
             // Create shape based on selected type
             if (lineButton.isSelected()) {
@@ -388,114 +389,46 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try (BufferedReader reader = new BufferedReader(new FileReader(fileChooser.getSelectedFile()))) {
-                List<Shape> tempShapes = new ArrayList<>(); // Temporary list to store shapes
+                shapes.clear();
+
                 String line;
-                int lineNumber = 0;
-
                 while ((line = reader.readLine()) != null) {
-                    lineNumber++;
-                    if (line.trim().isEmpty()) continue; // Skip empty lines
-
                     String[] parts = line.split(",");
-
-                    // Validate minimum number of parts (at least type + coords + RGB)
-                    if (parts.length < 5) {
-                        throw new IllegalArgumentException("Line " + lineNumber +
-                                ": Invalid format, not enough parameters");
-                    }
-
                     String shapeType = parts[0];
+                    int x = Integer.parseInt(parts[1]);
+                    int y = Integer.parseInt(parts[2]);
 
-                    // Validate shape type
-                    if (!shapeType.equals("LINE") && !shapeType.equals("RECTANGLE") &&
-                            !shapeType.equals("CIRCLE")) {
-                        throw new IllegalArgumentException("Line " + lineNumber +
-                                ": Unknown shape type: " + shapeType);
-                    }
+                    int r = Integer.parseInt(parts[parts.length - 3]);
+                    int g = Integer.parseInt(parts[parts.length - 2]);
+                    int b = Integer.parseInt(parts[parts.length - 1]);
 
-                    try {
-                        int x = Integer.parseInt(parts[1]);
-                        int y = Integer.parseInt(parts[2]);
+                    Color color = new Color(r, g, b);
 
-                        // Check if we have enough parts for RGB values
-                        if (parts.length <
-                                (shapeType.equals("LINE") ? 7 :
-                                        shapeType.equals("RECTANGLE") ? 7 : 6)) {
-                            throw new IllegalArgumentException("Line " + lineNumber +
-                                    ": Missing RGB values");
-                        }
-
-                        // Get RGB values (always at the end)
-                        int r = Integer.parseInt(parts[parts.length - 3]);
-                        int g = Integer.parseInt(parts[parts.length - 2]);
-                        int b = Integer.parseInt(parts[parts.length - 1]);
-
-                        // Validate RGB values
-                        if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
-                            throw new IllegalArgumentException("Line " + lineNumber +
-                                    ": RGB values must be between 0-255");
-                        }
-
-                        Color color = new Color(r, g, b);
-
-                        // Parse shape-specific parameters and add to temp list
-                        switch (shapeType) {
-                            case "LINE":
-                                if (parts.length != 7) {
-                                    throw new IllegalArgumentException("Line " + lineNumber +
-                                            ": Invalid LINE format, expected 7 parameters");
-                                }
-                                int endX = Integer.parseInt(parts[3]);
-                                int endY = Integer.parseInt(parts[4]);
-                                tempShapes.add(new Line(x, y, endX, endY, color));
-                                break;
-
-                            case "RECTANGLE":
-                                if (parts.length != 7) {
-                                    throw new IllegalArgumentException("Line " + lineNumber +
-                                            ": Invalid RECTANGLE format, expected 7 parameters");
-                                }
-                                int width = Integer.parseInt(parts[3]);
-                                int height = Integer.parseInt(parts[4]);
-                                if (width < 0 || height < 0) {
-                                    throw new IllegalArgumentException("Line " + lineNumber +
-                                            ": Rectangle width and height must be positive");
-                                }
-                                tempShapes.add(new Rectangle(x, y, width, height, color));
-                                break;
-
-                            case "CIRCLE":
-                                if (parts.length != 6) {
-                                    throw new IllegalArgumentException("Line " + lineNumber +
-                                            ": Invalid CIRCLE format, expected 6 parameters");
-                                }
-                                int radius = Integer.parseInt(parts[3]);
-                                if (radius < 0) {
-                                    throw new IllegalArgumentException("Line " + lineNumber +
-                                            ": Circle radius must be positive");
-                                }
-                                tempShapes.add(new Circle(x, y, radius, color));
-                                break;
-                        }
-                    } catch (NumberFormatException e) {
-                        throw new IllegalArgumentException("Line " + lineNumber +
-                                ": Invalid number format: " + e.getMessage());
+                    switch (shapeType) {
+                        case "LINE":
+                            int endX = Integer.parseInt(parts[3]);
+                            int endY = Integer.parseInt(parts[4]);
+                            shapes.add(new Line(x, y, endX, endY, color));
+                            break;
+                        case "RECTANGLE":
+                            int width = Integer.parseInt(parts[3]);
+                            int height = Integer.parseInt(parts[4]);
+                            shapes.add(new Rectangle(x, y, width, height, color));
+                            break;
+                        case "CIRCLE":
+                            int radius = Integer.parseInt(parts[3]);
+                            shapes.add(new Circle(x, y, radius, color));
+                            break;
+                        default:
+                            System.out.println("Unknown shape type: " + shapeType);
                     }
                 }
-
-                // If we've successfully parsed all shapes, update the actual shapes list
-                shapes.clear();
-                shapes.addAll(tempShapes);
-                JOptionPane.showMessageDialog(this, "File loaded successfully with " +
-                        shapes.size() + " shapes!");
-
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Error reading file: " + ex.getMessage(),
+            } catch (IOException | NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Error loading file: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(this, "Error parsing file: " + ex.getMessage(),
-                        "Format Error", JOptionPane.ERROR_MESSAGE);
             }
+
+
         }
     }
 
@@ -519,14 +452,11 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
 
             try {
                 File file = fileChooser.getSelectedFile();
-                String name = file.getName();
-                String ext = name.substring(name.lastIndexOf('.') + 1).toLowerCase();
-                if (!ext.equals("png") && !ext.equals("jpg") && !ext.equals("jpeg")) {
+                if (!file.getName().endsWith(".png")) {
                     file = new File(file.getAbsolutePath() + ".png");
-                    ext = "png";
                 }
 
-                ImageIO.write(image, ext, file);
+                ImageIO.write(image, "PNG", file);
                 JOptionPane.showMessageDialog(this, "Image saved successfully!");
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, "Error saving image: " + ex.getMessage(),
@@ -534,7 +464,6 @@ class DrawingPane extends JPanel implements MouseListener, MouseMotionListener, 
             }
         }
     }
-
 //    //wersja 1
 //    @Override
 //    public void mouseDragged(MouseEvent e) {

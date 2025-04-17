@@ -4,6 +4,7 @@ import java.awt.*;
 abstract class Shape {
     protected Color color;
 
+
     public Shape(Color color) {
         this.color = color;
     }
@@ -11,7 +12,6 @@ abstract class Shape {
     public abstract void draw(Graphics2D g2d);
     public abstract boolean isNearCenter(int x, int y);
     public abstract void move(int dx, int dy);
-    // Nowa metoda move z ograniczeniami obszaru
     public abstract void move(int dx, int dy, int maxWidth, int maxHeight, int controlPanelHeight);
     public abstract String toFileString();
     public abstract Point getCenter();
@@ -70,13 +70,11 @@ class Line extends Shape {
         this.y2 = y;
     }
 
-    // Ograniczone ustawienie końca 1 linii
     public void setEnd1(int x, int y, int maxWidth, int maxHeight, int controlPanelHeight) {
         this.x1 = Math.max(0, Math.min(x, maxWidth));
         this.y1 = Math.max(0, Math.min(y, maxHeight - controlPanelHeight));
     }
 
-    // Ograniczone ustawienie końca 2 linii
     public void setEnd2(int x, int y, int maxWidth, int maxHeight, int controlPanelHeight) {
         this.x2 = Math.max(0, Math.min(x, maxWidth));
         this.y2 = Math.max(0, Math.min(y, maxHeight - controlPanelHeight));
@@ -97,7 +95,6 @@ class Line extends Shape {
         int newX2 = x2 + dx;
         int newY2 = y2 + dy;
 
-        // Sprawdź czy po przesunięciu linia nie wyjdzie poza obszar rysowania
         if (newX1 >= 0 && newX1 <= maxWidth && newX2 >= 0 && newX2 <= maxWidth &&
                 newY1 >= 0 && newY1 <= maxHeight - controlPanelHeight &&
                 newY2 >= 0 && newY2 <= maxHeight - controlPanelHeight) {
@@ -106,7 +103,6 @@ class Line extends Shape {
             x2 = newX2;
             y2 = newY2;
         } else {
-            // Jeśli wychodzi poza ekran, przesuń maksymalnie jak się da
             if (newX1 < 0) {
                 int shift = -newX1;
                 newX1 += shift;

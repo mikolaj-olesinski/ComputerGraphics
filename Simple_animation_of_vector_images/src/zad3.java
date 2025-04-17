@@ -82,6 +82,11 @@ class Ball {
 
         //Check if balls are colliding
         if (distance < this.radius + other.getRadius()) {
+
+            //Prevent balls from overlapping
+            this.preventOverlap(other);
+
+
             // Normal vector pointing from center of this ball to center of other ball
             double nx = dx / distance;  // nx = (x2-x1)/d
             double ny = dy / distance;  // ny = (y2-y1)/d
@@ -124,8 +129,6 @@ class Ball {
             other.setVX(v2xAfter);
             other.setVY(v2yAfter);
 
-            //Prevent balls from overlapping
-            this.preventOverlap(other);
         }
     }
 
@@ -174,6 +177,8 @@ class Ball {
         System.out.println("vx: " + vx + " vy: " + vy + " deltaTime: " + deltaTime + " x: " + x + " y: " + y);
         x += vx * deltaTime;
         y += vy * deltaTime;
+
+
     }
 
     // Handle collision with table borders
@@ -222,7 +227,7 @@ class BilliardTable {
     private final int NUM_BALLS = 10; // Number of balls on the table
     private final double FRICTION = 0.7;   // Friction coefficient
     private final double MIN_VELOCITY = 0.1; // Minimum velocity before ball stops completely
-    private final double MAX_INITIAL_VELOCITY = 5000; // Maximum initial velocity of balls
+    private final double MAX_INITIAL_VELOCITY = 10000; // Maximum initial velocity of balls
 
     // Colors of the table and border
     private final Color TABLE_COLOR = new Color(0, 100, 0);

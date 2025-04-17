@@ -193,7 +193,7 @@ class ClockPane extends JPanel {
         double timeInSeconds = second + (milisecond / 1000.0);
 
         //Calculate pendulum angle
-        double pendulumAngle = amplitude * Math.cos(2 * Math.PI * timeInSeconds / period);
+        double pendulumAngle = amplitude * Math.cos(2 * Math.PI * timeInSeconds / period); // A * cos(2 * PI * t / T)
 
         //Draw the pendulum
         DrawPendulum(pendulumAngle, r_outer * 4, g);
