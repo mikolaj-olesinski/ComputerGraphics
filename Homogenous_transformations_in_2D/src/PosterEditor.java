@@ -16,8 +16,8 @@ public class PosterEditor extends JFrame {
     private static final int WIDTH = 1200;
     private static final int HEIGHT = 800;
     private static final int THUMBNAIL_SIZE = 80;
-    private static final double ROTATION_ANGLE = Math.PI / 36; // 5 stopni
-    private static final int TRANSLATION_STEP = 1; // 1 piksel
+    private static final double ROTATION_ANGLE = Math.PI / 36; // 5 degrees
+    private static final int TRANSLATION_STEP = 1; // 1 pixel
 
     private JPanel thumbnailPanel;
     private JPanel shapesPanel;
@@ -42,35 +42,35 @@ public class PosterEditor extends JFrame {
     }
 
     private void initPanels() {
-        // Panel główny podzielony na dwie części
+        // Main panel divided into two parts
         JPanel mainPanel = new JPanel(new BorderLayout());
 
-        // Panel lewy (podzielony na górny i dolny)
+        // Left panel (divided into upper and lower)
         JPanel leftPanel = new JPanel(new GridLayout(2, 1, 0, 10));
 
-        // Panel miniatur obrazów (lewy górny)
+        // Thumbnail images panel (upper left)
         thumbnailPanel = new JPanel();
         thumbnailPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-        thumbnailPanel.setBorder(BorderFactory.createTitledBorder("Obrazy"));
+        thumbnailPanel.setBorder(BorderFactory.createTitledBorder("Images"));
         JScrollPane thumbnailScroll = new JScrollPane(thumbnailPanel);
         thumbnailScroll.setPreferredSize(new Dimension(300, 350));
 
-        // Panel kształtów (lewy dolny)
+        // Shapes panel (lower left)
         shapesPanel = new JPanel();
         shapesPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-        shapesPanel.setBorder(BorderFactory.createTitledBorder("Kształty"));
+        shapesPanel.setBorder(BorderFactory.createTitledBorder("Shapes"));
         JScrollPane shapesScroll = new JScrollPane(shapesPanel);
         shapesScroll.setPreferredSize(new Dimension(300, 350));
 
         leftPanel.add(thumbnailScroll);
         leftPanel.add(shapesScroll);
 
-        // Panel plakatu (prawy)
+        // Poster panel (right)
         posterPanel = new PosterPanel();
         JScrollPane posterScroll = new JScrollPane(posterPanel);
         posterScroll.setPreferredSize(new Dimension(850, 700));
 
-        // Panel kontrolny (dolny)
+        // Control panel (bottom)
         controlPanel = new JPanel();
         controlPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 
@@ -88,11 +88,10 @@ public class PosterEditor extends JFrame {
         JButton moveDownBtn = new JButton("↓");
         JButton rotateLeftBtn = new JButton("⟲");
         JButton rotateRightBtn = new JButton("⟳");
-        JButton bringToFrontBtn = new JButton("Na wierzch");
-        JButton sendToBackBtn = new JButton("Na spód");
-        JButton deleteBtn = new JButton("Usuń");
+        JButton bringToFrontBtn = new JButton("To Front");
+        JButton sendToBackBtn = new JButton("To Back");
+        JButton deleteBtn = new JButton("Delete");
 
-        // Fix: Use screen-oriented movement regardless of element rotation
         moveLeftBtn.addActionListener(e -> moveSelectedInScreenCoordinates(-TRANSLATION_STEP, 0));
         moveRightBtn.addActionListener(e -> moveSelectedInScreenCoordinates(TRANSLATION_STEP, 0));
         moveUpBtn.addActionListener(e -> moveSelectedInScreenCoordinates(0, -TRANSLATION_STEP));
@@ -114,7 +113,6 @@ public class PosterEditor extends JFrame {
         controlPanel.add(deleteBtn);
     }
 
-    // Fix: New method for screen-oriented movement
     private void moveSelectedInScreenCoordinates(int dx, int dy) {
         if (selectedElement != null) {
             // Apply screen-oriented translation
@@ -126,11 +124,11 @@ public class PosterEditor extends JFrame {
     }
 
     private void loadImageThumbnails() {
-        // W praktyce wybierz katalog lub wczytaj z określonego miejsca
+        // In practice, choose a directory or load from a specific location
         imageDirectory = new File("images");
         if (!imageDirectory.exists() || !imageDirectory.isDirectory()) {
             JOptionPane.showMessageDialog(this,
-                    "Katalog 'images' nie istnieje. Stwórz go i umieść tam obrazy.");
+                    "The 'images' directory does not exist. Create it and place images there.");
             return;
         }
 
@@ -142,7 +140,7 @@ public class PosterEditor extends JFrame {
 
         if (imageFiles == null || imageFiles.length == 0) {
             JOptionPane.showMessageDialog(this,
-                    "Brak obrazów w katalogu 'images'.");
+                    "No images in the 'images' directory.");
             return;
         }
 
@@ -150,18 +148,18 @@ public class PosterEditor extends JFrame {
             try {
                 BufferedImage original = ImageIO.read(file);
                 if (original != null) {
-                    // Stwórz miniaturę
+                    // Create thumbnail
                     BufferedImage thumbnail = createThumbnail(original, THUMBNAIL_SIZE);
                     JLabel label = new JLabel(new ImageIcon(thumbnail));
                     label.setBorder(BorderFactory.createLineBorder(Color.BLACK));
                     label.setToolTipText(file.getName());
 
-                    // Dodaj obsługę Drag and Drop dla miniatury
+                    // Add Drag and Drop handling for the thumbnail
                     setupDragSource(label, new ImageElement(original, file.getName()));
                     thumbnailPanel.add(label);
                 }
             } catch (IOException e) {
-                System.err.println("Nie można wczytać obrazu: " + file.getName());
+                System.err.println("Cannot load image: " + file.getName());
                 e.printStackTrace();
             }
         }
@@ -187,7 +185,7 @@ public class PosterEditor extends JFrame {
     }
 
     private void createShapeGallery() {
-        // Dodaj kwadrat
+        // Add square
         JPanel squarePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -201,7 +199,7 @@ public class PosterEditor extends JFrame {
         squarePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         setupDragSource(squarePanel, new ShapeElement(ShapeType.RECTANGLE, Color.RED));
 
-        // Dodaj koło
+        // Add circle
         JPanel circlePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -232,14 +230,6 @@ public class PosterEditor extends JFrame {
         );
     }
 
-    private void moveSelected(int dx, int dy) {
-        if (selectedElement != null) {
-            selectedElement.getTransform().translate(dx, dy);
-            posterPanel.repaint();
-        }
-    }
-
-    // Fix: Improved rotation method that maintains position
     private void rotateSelected(double angle) {
         if (selectedElement != null) {
             Rectangle2D bounds = selectedElement.getBounds();
@@ -282,19 +272,20 @@ public class PosterEditor extends JFrame {
         }
     }
 
-    // Panel plakatu
+    // Poster Panel
     private class PosterPanel extends JPanel implements DropTargetListener {
-        private Point dragStart;
+        private Point lastMousePoint;
         private int dragHandleIndex = -1;
+        private boolean isDragging = false;
 
         public PosterPanel() {
             setBackground(Color.WHITE);
             setPreferredSize(new Dimension(800, 600));
 
-            // Obsługa upuszczania elementów na panel
+            // Setup drop target for elements
             new DropTarget(this, this);
 
-            // Obsługa zdarzeń myszy
+            // Setup mouse event handling
             MouseAdapter mouseAdapter = new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
@@ -303,8 +294,10 @@ public class PosterEditor extends JFrame {
 
                 @Override
                 public void mouseReleased(MouseEvent e) {
-                    dragStart = null;
+                    isDragging = false;
+                    lastMousePoint = null;
                     dragHandleIndex = -1;
+                    setCursor(Cursor.getDefaultCursor());
                 }
 
                 @Override
@@ -314,7 +307,7 @@ public class PosterEditor extends JFrame {
 
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    // Usuwanie elementu prawym przyciskiem myszy
+                    // Delete element with right mouse button
                     if (e.getButton() == MouseEvent.BUTTON3) {
                         for (PosterElement element : new ArrayList<>(posterElements)) {
                             if (element.contains(e.getPoint())) {
@@ -336,48 +329,56 @@ public class PosterEditor extends JFrame {
 
         private void handleMousePressed(MouseEvent e) {
             Point p = e.getPoint();
+            PosterElement prevSelected = selectedElement;
             selectedElement = null;
             dragHandleIndex = -1;
+            lastMousePoint = p;
 
-            // Iteruj od końca, aby wybrać element na wierzchu
+            // Iterate from end to select element on top
             for (int i = posterElements.size() - 1; i >= 0; i--) {
                 PosterElement element = posterElements.get(i);
 
-                // Sprawdź, czy kliknięto w uchwyt
-                int handleIndex = element.getHandleAt(p);
-                if (handleIndex != -1) {
-                    selectedElement = element;
-                    dragHandleIndex = handleIndex;
-                    dragStart = p;
-                    repaint();
-                    return;
+                // Check if clicked on a handle
+                if (prevSelected == element) {
+                    int handleIndex = element.getHandleAt(p);
+                    if (handleIndex != -1) {
+                        selectedElement = element;
+                        dragHandleIndex = handleIndex;
+                        isDragging = true;
+                        repaint();
+                        return;
+                    }
                 }
 
-                // Sprawdź, czy kliknięto w środek elementu
+                // Check if clicked in middle of element
                 if (element.contains(p)) {
                     selectedElement = element;
-                    dragStart = p;
+                    isDragging = true;
                     repaint();
                     return;
                 }
             }
+
+            repaint(); // Repaint to update selection state
         }
 
         private void handleMouseDragged(MouseEvent e) {
-            if (selectedElement != null && dragStart != null) {
-                Point p = e.getPoint();
-                int dx = p.x - dragStart.x;
-                int dy = p.y - dragStart.y;
+            if (selectedElement != null && lastMousePoint != null) {
+                Point currentPoint = e.getPoint();
+                int dx = currentPoint.x - lastMousePoint.x;
+                int dy = currentPoint.y - lastMousePoint.y;
 
                 if (dragHandleIndex != -1) {
-                    // Przeciąganie uchwytów - zmiana rozmiaru lub rotacja
+                    // Handle dragging - resize or rotation
                     selectedElement.transformByHandle(dragHandleIndex, dx, dy);
                 } else {
-                    // Przeciąganie całego elementu - translacja
-                    selectedElement.getTransform().translate(dx, dy);
+                    // Element dragging - translation in screen coordinates
+                    AffineTransform dragTransform = new AffineTransform();
+                    dragTransform.translate(dx, dy);
+                    selectedElement.getTransform().preConcatenate(dragTransform);
                 }
 
-                dragStart = p;
+                lastMousePoint = currentPoint;
                 repaint();
             }
         }
@@ -389,18 +390,18 @@ public class PosterEditor extends JFrame {
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                     RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // Rysuj wszystkie elementy plakatu
+            // Draw all poster elements
             for (PosterElement element : posterElements) {
                 element.draw(g2d);
             }
 
-            // Rysuj uchwyty dla wybranego elementu
+            // Draw handles for selected element
             if (selectedElement != null) {
                 selectedElement.drawHandles(g2d);
             }
         }
 
-        // Implementacja DropTargetListener
+        // DropTargetListener implementation
         @Override
         public void dragEnter(DropTargetDragEvent dtde) {
             if (dtde.isDataFlavorSupported(ElementTransferable.ELEMENT_FLAVOR)) {
@@ -437,10 +438,10 @@ public class PosterEditor extends JFrame {
                     PosterElement element = (PosterElement) transferable.getTransferData(
                             ElementTransferable.ELEMENT_FLAVOR);
 
-                    // Klonuj element, aby można go było wielokrotnie dodawać
+                    // Clone element so it can be added multiple times
                     PosterElement newElement = element.clone();
 
-                    // Ustaw pozycję elementu na miejsce upuszczenia
+                    // Set element position to drop location
                     Point dropPoint = dtde.getLocation();
                     newElement.getTransform().setToTranslation(
                             dropPoint.x - newElement.getInitialWidth() / 2,
@@ -461,12 +462,12 @@ public class PosterEditor extends JFrame {
         }
     }
 
-    // Rodzaje kształtów
+    // Shape types
     private enum ShapeType {
         RECTANGLE, CIRCLE
     }
 
-    // Klasa abstrakcyjna dla elementów plakatu
+    // Abstract class for poster elements
     private abstract static class PosterElement implements Cloneable {
         protected AffineTransform transform = new AffineTransform();
         protected static final int HANDLE_SIZE = 8;
@@ -492,9 +493,8 @@ public class PosterEditor extends JFrame {
             }
         }
 
-        // Rysuj uchwyty dla wybranego elementu
+        // Draw handles for selected element
         public void drawHandles(Graphics2D g2d) {
-            Rectangle2D bounds = getBounds();
             Point2D[] handles = getHandlePositions();
 
             g2d.setColor(Color.BLACK);
@@ -503,27 +503,34 @@ public class PosterEditor extends JFrame {
                         (int)(handle.getY() - HANDLE_SIZE/2),
                         HANDLE_SIZE, HANDLE_SIZE);
             }
+
+            // Draw bounding box
+            g2d.setColor(Color.GRAY);
+            g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT,
+                    BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0));
+            Rectangle2D bounds = getBounds();
+            g2d.draw(bounds);
         }
 
-        // Zwraca pozycje uchwytów
+        // Return handle positions
         public Point2D[] getHandlePositions() {
             Rectangle2D bounds = getBounds();
             double centerX = bounds.getCenterX();
             double centerY = bounds.getCenterY();
 
             return new Point2D[] {
-                    new Point2D.Double(bounds.getMinX(), bounds.getMinY()), // Lewy górny
-                    new Point2D.Double(centerX, bounds.getMinY()),          // Środek górny
-                    new Point2D.Double(bounds.getMaxX(), bounds.getMinY()), // Prawy górny
-                    new Point2D.Double(bounds.getMaxX(), centerY),          // Prawy środkowy
-                    new Point2D.Double(bounds.getMaxX(), bounds.getMaxY()), // Prawy dolny
-                    new Point2D.Double(centerX, bounds.getMaxY()),          // Środek dolny
-                    new Point2D.Double(bounds.getMinX(), bounds.getMaxY()), // Lewy dolny
-                    new Point2D.Double(bounds.getMinX(), centerY)           // Lewy środkowy
+                    new Point2D.Double(bounds.getMinX(), bounds.getMinY()), // Top-left
+                    new Point2D.Double(centerX, bounds.getMinY()),          // Top-center
+                    new Point2D.Double(bounds.getMaxX(), bounds.getMinY()), // Top-right
+                    new Point2D.Double(bounds.getMaxX(), centerY),          // Right-center
+                    new Point2D.Double(bounds.getMaxX(), bounds.getMaxY()), // Bottom-right
+                    new Point2D.Double(centerX, bounds.getMaxY()),          // Bottom-center
+                    new Point2D.Double(bounds.getMinX(), bounds.getMaxY()), // Bottom-left
+                    new Point2D.Double(bounds.getMinX(), centerY)           // Left-center
             };
         }
 
-        // Sprawdza, czy punkt znajduje się w obrębie uchwytu i zwraca jego indeks
+        // Check if point is within a handle and return its index
         public int getHandleAt(Point p) {
             Point2D[] handles = getHandlePositions();
 
@@ -539,7 +546,7 @@ public class PosterEditor extends JFrame {
             return -1;
         }
 
-        // Fix: Improved handle transformation method with proper resizing
+        // Transform element by handle
         public void transformByHandle(int handleIndex, int dx, int dy) {
             Rectangle2D bounds = getBounds();
             double centerX = bounds.getCenterX();
@@ -569,14 +576,16 @@ public class PosterEditor extends JFrame {
                 );
                 double scaleFactor = newDist / oldDist;
 
-                // Apply transformations relative to the center
-                AffineTransform newTransform = new AffineTransform();
-                newTransform.translate(centerX, centerY);
-                newTransform.rotate(angleChange);
-                newTransform.scale(scaleFactor, scaleFactor);
-                newTransform.translate(-centerX, -centerY);
+                if (scaleFactor > 0.1) { // Prevent scaling to zero or negative
+                    // Apply transformations relative to the center
+                    AffineTransform newTransform = new AffineTransform();
+                    newTransform.translate(centerX, centerY);
+                    newTransform.rotate(angleChange);
+                    newTransform.scale(scaleFactor, scaleFactor);
+                    newTransform.translate(-centerX, -centerY);
 
-                transform.preConcatenate(newTransform);
+                    transform.preConcatenate(newTransform);
+                }
             } else {
                 // Edge handles (1, 3, 5, 7) - perform directional scaling
                 // Determine which axis to scale along
@@ -593,7 +602,9 @@ public class PosterEditor extends JFrame {
                             bounds.getMaxY() : bounds.getMinY();
                     double currentHeight = Math.abs(handle.getY() - oppositeY);
                     double newHeight = Math.abs(handle.getY() + dy - oppositeY);
-                    scaleY = newHeight / currentHeight;
+                    if (newHeight > 5) { // Minimum size check
+                        scaleY = newHeight / currentHeight;
+                    }
                 }
 
                 if (isVerticalEdge) {
@@ -602,7 +613,9 @@ public class PosterEditor extends JFrame {
                             bounds.getMinX() : bounds.getMaxX();
                     double currentWidth = Math.abs(handle.getX() - oppositeX);
                     double newWidth = Math.abs(handle.getX() + dx - oppositeX);
-                    scaleX = newWidth / currentWidth;
+                    if (newWidth > 5) { // Minimum size check
+                        scaleX = newWidth / currentWidth;
+                    }
                 }
 
                 // Apply directional scaling
@@ -616,7 +629,7 @@ public class PosterEditor extends JFrame {
         }
     }
 
-    // Element obrazu
+    // Image element
     private static class ImageElement extends PosterElement {
         private BufferedImage image;
         private String name;
@@ -663,7 +676,7 @@ public class PosterEditor extends JFrame {
         }
     }
 
-    // Element kształtu
+    // Shape element
     private static class ShapeElement extends PosterElement {
         private ShapeType type;
         private Color color;
@@ -724,7 +737,7 @@ public class PosterEditor extends JFrame {
         }
     }
 
-    // Transferable dla elementów plakatu
+    // Transferable for poster elements
     private static class ElementTransferable implements Transferable {
         public static final DataFlavor ELEMENT_FLAVOR =
                 new DataFlavor(PosterElement.class, "Poster Element");
