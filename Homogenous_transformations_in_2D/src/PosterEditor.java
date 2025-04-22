@@ -126,6 +126,7 @@ public class PosterEditor extends JFrame {
         // In practice, choose a directory or load from a specific location
         imageDirectory = new File("images");
         if (!imageDirectory.exists() || !imageDirectory.isDirectory()) {
+            System.out.println("Current working directory: " + System.getProperty("user.dir"));
             JOptionPane.showMessageDialog(this,
                     "The 'images' directory does not exist. Create it and place images there.");
             return;
@@ -296,7 +297,6 @@ public class PosterEditor extends JFrame {
                     isDragging = false;
                     lastMousePoint = null;
                     dragHandleIndex = -1;
-                    setCursor(Cursor.getDefaultCursor());
                 }
 
                 @Override
@@ -308,9 +308,10 @@ public class PosterEditor extends JFrame {
                 public void mouseClicked(MouseEvent e) {
                     // Delete element with right mouse button
                     if (e.getButton() == MouseEvent.BUTTON3) {
-                        for (PosterElement element : new ArrayList<>(posterElements)) {
+                        for (int i = posterElements.size() - 1; i >= 0; i--) {
+                            PosterElement element = posterElements.get(i);
                             if (element.contains(e.getPoint())) {
-                                posterElements.remove(element);
+                                posterElements.remove(i);
                                 if (selectedElement == element) {
                                     selectedElement = null;
                                 }
