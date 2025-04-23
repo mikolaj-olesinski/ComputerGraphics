@@ -10,6 +10,7 @@ public abstract class PosterElement implements Cloneable {
     public abstract boolean contains(Point p);
     public abstract int getInitialWidth();
     public abstract int getInitialHeight();
+    public abstract Point2D[] getCornerPoints();
 
     public AffineTransform getTransform() {
         return transform;
@@ -37,29 +38,42 @@ public abstract class PosterElement implements Cloneable {
                     HANDLE_SIZE, HANDLE_SIZE);
         }
 
-        // Draw bounding box
+        // Draw bounding polygon connecting corner points
         g2d.setColor(Color.GRAY);
         g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT,
                 BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0));
-        Rectangle2D bounds = getBounds();
-        g2d.draw(bounds);
+
+        Path2D path = new Path2D.Double();
+        Point2D[] cornerPoints = getCornerPoints();
+        path.moveTo(cornerPoints[0].getX(), cornerPoints[0].getY());
+        for (int i = 1; i < cornerPoints.length; i++) {
+            path.lineTo(cornerPoints[i].getX(), cornerPoints[i].getY());
+        }
+        path.closePath();
+        g2d.draw(path);
     }
 
     // Return handle positions
     public Point2D[] getHandlePositions() {
+        Point2D[] cornerPoints = getCornerPoints();
         Rectangle2D bounds = getBounds();
         double centerX = bounds.getCenterX();
         double centerY = bounds.getCenterY();
 
+        // Return 8 handle positions (4 corners + 4 midpoints)
         return new Point2D[] {
-                new Point2D.Double(bounds.getMinX(), bounds.getMinY()), // Top-left
-                new Point2D.Double(centerX, bounds.getMinY()),          // Top-center
-                new Point2D.Double(bounds.getMaxX(), bounds.getMinY()), // Top-right
-                new Point2D.Double(bounds.getMaxX(), centerY),          // Right-center
-                new Point2D.Double(bounds.getMaxX(), bounds.getMaxY()), // Bottom-right
-                new Point2D.Double(centerX, bounds.getMaxY()),          // Bottom-center
-                new Point2D.Double(bounds.getMinX(), bounds.getMaxY()), // Bottom-left
-                new Point2D.Double(bounds.getMinX(), centerY)           // Left-center
+                cornerPoints[0], // Top-left
+                new Point2D.Double((cornerPoints[0].getX() + cornerPoints[1].getX()) / 2,
+                        (cornerPoints[0].getY() + cornerPoints[1].getY()) / 2), // Top-center
+                cornerPoints[1], // Top-right
+                new Point2D.Double((cornerPoints[1].getX() + cornerPoints[2].getX()) / 2,
+                        (cornerPoints[1].getY() + cornerPoints[2].getY()) / 2), // Right-center
+                cornerPoints[2], // Bottom-right
+                new Point2D.Double((cornerPoints[2].getX() + cornerPoints[3].getX()) / 2,
+                        (cornerPoints[2].getY() + cornerPoints[3].getY()) / 2), // Bottom-center
+                cornerPoints[3], // Bottom-left
+                new Point2D.Double((cornerPoints[3].getX() + cornerPoints[0].getX()) / 2,
+                        (cornerPoints[3].getY() + cornerPoints[0].getY()) / 2)  // Left-center
         };
     }
 
@@ -81,11 +95,18 @@ public abstract class PosterElement implements Cloneable {
 
     // Transform element by handle
     public void transformByHandle(int handleIndex, int dx, int dy) {
-        Rectangle2D bounds = getBounds();
-        double centerX = bounds.getCenterX();
-        double centerY = bounds.getCenterY();
+        Point2D[] cornerPoints = getCornerPoints();
         Point2D[] handles = getHandlePositions();
         Point2D handle = handles[handleIndex];
+
+        // Calculate center of the element
+        double sumX = 0, sumY = 0;
+        for (Point2D corner : cornerPoints) {
+            sumX += corner.getX();
+            sumY += corner.getY();
+        }
+        double centerX = sumX / cornerPoints.length;
+        double centerY = sumY / cornerPoints.length;
 
         if (handleIndex % 2 == 0) {
             // Corner handles (0, 2, 4, 6) - perform scaling and rotation
@@ -119,42 +140,80 @@ public abstract class PosterElement implements Cloneable {
 
                 transform.preConcatenate(newTransform);
             }
+
+
         } else {
             // Edge handles (1, 3, 5, 7) - perform directional scaling
-            // Determine which axis to scale along
-            boolean isHorizontalEdge = (handleIndex == 1 || handleIndex == 5);
-            boolean isVerticalEdge = (handleIndex == 3 || handleIndex == 7);
 
-            // Calculate scaling factors
-            double scaleX = 1.0;
-            double scaleY = 1.0;
+            // Determine which axis to scale based on handle index
+            boolean isVertical = (handleIndex == 1 || handleIndex == 5);
+            boolean isHorizontal = (handleIndex == 3 || handleIndex == 7);
 
-            if (isHorizontalEdge) {
-                // Get opposite edge y-coordinate
-                double oppositeY = (handleIndex == 1) ?
-                        bounds.getMaxY() : bounds.getMinY();
-                double currentHeight = Math.abs(handle.getY() - oppositeY);
-                double newHeight = Math.abs(handle.getY() + dy - oppositeY);
-                if (newHeight > 5) { // Minimum size check
-                    scaleY = newHeight / currentHeight;
+            // Get the orientation of the element from its current transform
+            double[] matrix = new double[6];
+            transform.getMatrix(matrix);
+            double m00 = matrix[0]; // scaleX * cos(angle)
+            double m10 = matrix[1]; // scaleX * sin(angle)
+            double m01 = matrix[2]; // -scaleY * sin(angle)
+            double m11 = matrix[3]; // scaleY * cos(angle)
+
+            // Calculate the angle of the element
+            double angle = Math.atan2(m10, m00);
+
+            // Calculate directional vectors based on current orientation
+            double dirX, dirY;
+            if (isVertical) {
+                // Direction perpendicular to horizontal axis
+                dirX = -Math.sin(angle);
+                dirY = Math.cos(angle);
+            } else { // isHorizontal
+                // Direction along horizontal axis
+                dirX = Math.cos(angle);
+                dirY = Math.sin(angle);
+            }
+
+            // Project drag vector onto direction vector
+            double dragProjection = dx * dirX + dy * dirY;
+
+            // Determine scaling factor and axis
+            double scaleX = 1.0, scaleY = 1.0;
+
+            if (isVertical) {
+                // Calculate original vertical dimension
+                double originalHeight = Point2D.distance(
+                        handles[1].getX(), handles[1].getY(),
+                        handles[5].getX(), handles[5].getY()
+                );
+
+                // Calculate scale factor for vertical handles
+                double scalingDirection = (handleIndex == 1) ? -1 : 1;
+                double newHeight = originalHeight + 2 * dragProjection * scalingDirection;
+
+                if (newHeight > 5) {
+                    scaleY = newHeight / originalHeight;
+                }
+            } else {
+                // Calculate original horizontal dimension
+                double originalWidth = Point2D.distance(
+                        handles[3].getX(), handles[3].getY(),
+                        handles[7].getX(), handles[7].getY()
+                );
+
+                // Calculate scale factor for horizontal handles
+                double scalingDirection = (handleIndex == 7) ? -1 : 1;
+                double newWidth = originalWidth + 2 * dragProjection * scalingDirection;
+
+                if (newWidth > 5) {
+                    scaleX = newWidth / originalWidth;
                 }
             }
 
-            if (isVerticalEdge) {
-                // Get opposite edge x-coordinate
-                double oppositeX = (handleIndex == 3) ?
-                        bounds.getMinX() : bounds.getMaxX();
-                double currentWidth = Math.abs(handle.getX() - oppositeX);
-                double newWidth = Math.abs(handle.getX() + dx - oppositeX);
-                if (newWidth > 5) { // Minimum size check
-                    scaleX = newWidth / currentWidth;
-                }
-            }
-
-            // Apply directional scaling
+            // Apply scaling in the element's local coordinate system
             AffineTransform scaleTransform = new AffineTransform();
             scaleTransform.translate(centerX, centerY);
+            scaleTransform.rotate(angle);
             scaleTransform.scale(scaleX, scaleY);
+            scaleTransform.rotate(-angle);
             scaleTransform.translate(-centerX, -centerY);
 
             transform.preConcatenate(scaleTransform);

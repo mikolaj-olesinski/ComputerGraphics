@@ -1,5 +1,5 @@
 import java.awt.*;
-        import java.awt.geom.*;
+import java.awt.geom.*;
 
 public class ShapeElement extends PosterElement {
     private ShapeType type;
@@ -28,8 +28,43 @@ public class ShapeElement extends PosterElement {
 
     @Override
     public Rectangle2D getBounds() {
-        Rectangle2D rect = new Rectangle2D.Double(0, 0, DEFAULT_SIZE, DEFAULT_SIZE);
-        return transform.createTransformedShape(rect).getBounds2D();
+        // Get the transformed corner points
+        Point2D[] cornerPoints = getCornerPoints();
+
+        // Find the bounding box that contains all transformed corner points
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+
+        for (Point2D point : cornerPoints) {
+            minX = Math.min(minX, point.getX());
+            minY = Math.min(minY, point.getY());
+            maxX = Math.max(maxX, point.getX());
+            maxY = Math.max(maxY, point.getY());
+        }
+
+        return new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    @Override
+    public Point2D[] getCornerPoints() {
+        // Punkty oryginalnego prostokąta
+        Point2D[] points = new Point2D[] {
+                new Point2D.Double(0, 0),                      // lewy górny
+                new Point2D.Double(DEFAULT_SIZE, 0),           // prawy górny
+                new Point2D.Double(DEFAULT_SIZE, DEFAULT_SIZE), // prawy dolny
+                new Point2D.Double(0, DEFAULT_SIZE)            // lewy dolny
+        };
+
+        // Transformacja każdego punktu
+        Point2D[] transformedPoints = new Point2D[4];
+        for (int i = 0; i < 4; i++) {
+            transformedPoints[i] = new Point2D.Double();
+            transform.transform(points[i], transformedPoints[i]);
+        }
+
+        return transformedPoints;
     }
 
     @Override
