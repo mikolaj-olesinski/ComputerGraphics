@@ -119,6 +119,10 @@ public class PosterEditor extends JFrame {
 
         controlPanel.add(saveBtn);
         controlPanel.add(loadBtn);
+
+        JButton exportImageBtn = new JButton("Export Image");
+        exportImageBtn.addActionListener(e -> exportPosterToImage());
+        controlPanel.add(exportImageBtn);
     }
 
     private void savePosterToFile() {
@@ -249,6 +253,129 @@ public class PosterEditor extends JFrame {
 
         return line;
     }
+
+    private void exportPosterToImage() {
+        // Show file chooser for save location
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        fileChooser.setDialogTitle("Export Image");
+
+        // Add extension filters
+        String[] formats = {"png", "jpg", "bmp"};
+        for (String format : formats) {
+            fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileFilter() {
+                @Override
+                public boolean accept(File f) {
+                    return f.isDirectory() || f.getName().toLowerCase().endsWith("." + format);
+                }
+
+                @Override
+                public String getDescription() {
+                    return format.toUpperCase() + " Images (*." + format + ")";
+                }
+            });
+        }
+
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            String format = "png"; // Default format
+
+            // Determine format from extension or filter
+            String fileName = file.getName().toLowerCase();
+            if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+                format = "jpg";
+            } else if (fileName.endsWith(".bmp")) {
+                format = "bmp";
+            } else if (!fileName.endsWith(".png")) {
+                // Add .png extension if no recognized extension
+                file = new File(file.getAbsolutePath() + ".png");
+            }
+
+            savePosterAsImage(file, format);
+        }
+    }
+
+    private void savePosterAsImage(File file, String format) {
+        // Calculate bounding box of all elements
+        Rectangle2D bounds = calculatePosterBounds();
+
+        if (bounds.getWidth() <= 0 || bounds.getHeight() <= 0) {
+            JOptionPane.showMessageDialog(this,
+                    "No elements to export or invalid bounds.",
+                    "Export Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Create image buffer with exact size needed for all elements
+        int width = (int)Math.ceil(bounds.getWidth());
+        int height = (int)Math.ceil(bounds.getHeight());
+
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+
+        // Set high quality rendering
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+
+        // Fill with white background
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(0, 0, width, height);
+
+        // Apply transformation to account for element positions
+        g2d.translate(-bounds.getX(), -bounds.getY());
+
+        // Draw all elements
+        for (PosterElement element : posterElements) {
+            element.draw(g2d);
+        }
+
+        g2d.dispose();
+
+        try {
+            ImageIO.write(image, format, file);
+            JOptionPane.showMessageDialog(this,
+                    "Image exported successfully to " + file.getName(),
+                    "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error exporting image: " + ex.getMessage(),
+                    "Export Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    private Rectangle2D calculatePosterBounds() {
+        if (posterElements.isEmpty()) {
+            return new Rectangle2D.Double(0, 0, 800, 600); // Default size
+        }
+
+        // Find the bounds that include all elements
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+
+        for (PosterElement element : posterElements) {
+            Rectangle2D bounds = element.getBounds();
+
+            minX = Math.min(minX, bounds.getX());
+            minY = Math.min(minY, bounds.getY());
+            maxX = Math.max(maxX, bounds.getX() + bounds.getWidth());
+            maxY = Math.max(maxY, bounds.getY() + bounds.getHeight());
+        }
+
+        // Add small margin
+        double margin = 10.0;
+        return new Rectangle2D.Double(
+                minX - margin,
+                minY - margin,
+                maxX - minX + 2 * margin,
+                maxY - minY + 2 * margin
+        );
+    }
+
+
 
     private void loadImageThumbnails() {
         // In practice, choose a directory or load from a specific location
