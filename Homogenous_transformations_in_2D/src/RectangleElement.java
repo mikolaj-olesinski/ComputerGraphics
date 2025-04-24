@@ -40,4 +40,34 @@ public class RectangleElement extends ShapeElement {
         clone.color = this.color;
         return clone;
     }
+
+    @Override
+    public String serialize() {
+        return "RECTANGLE:" + colorToString(color) + ":" + serializeTransform();
+    }
+
+    public static RectangleElement fromString(String data) {
+        if (!data.startsWith("RECTANGLE:")) {
+            return null;
+        }
+
+        try {
+            String[] parts = data.substring("RECTANGLE:".length()).split(":", 2);
+            if (parts.length != 2) {
+                System.err.println("Invalid rectangle format: " + data);
+                return null;
+            }
+
+            Color color = stringToColor(parts[0]);
+            AffineTransform transform = parseTransform(parts[1]);
+
+            RectangleElement element = new RectangleElement(color);
+            element.transform = transform;  // Ensure transform is assigned properly
+            return element;
+        } catch (Exception e) {
+            System.err.println("Error parsing rectangle: " + data);
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

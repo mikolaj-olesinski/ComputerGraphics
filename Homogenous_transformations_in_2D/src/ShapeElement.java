@@ -57,4 +57,29 @@ public abstract class ShapeElement extends PosterElement {
 
         return new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
     }
+
+
+    protected static String colorToString(Color color) {
+        return String.format("%d,%d,%d,%d",
+                color.getRed(), color.getGreen(),
+                color.getBlue(), color.getAlpha());
+    }
+
+    // Convert string to color
+    protected static Color stringToColor(String str) {
+        String[] parts = str.split(",");
+        if (parts.length != 4) {
+            return Color.BLACK;
+        }
+
+        try {
+            int r = Integer.parseInt(parts[0]);
+            int g = Integer.parseInt(parts[1]);
+            int b = Integer.parseInt(parts[2]);
+            int a = Integer.parseInt(parts[3]);
+            return new Color(r, g, b, a);
+        } catch (NumberFormatException e) {
+            return Color.BLACK;
+        }
+    }
 }

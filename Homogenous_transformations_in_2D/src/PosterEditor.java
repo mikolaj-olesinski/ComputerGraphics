@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.*;
 import java.awt.event.*;
@@ -54,7 +53,7 @@ public class PosterEditor extends JFrame {
         JScrollPane thumbnailScroll = new JScrollPane(thumbnailPanel);
         thumbnailScroll.setPreferredSize(new Dimension(300, 350));
 
-        // Shapes panel (lower left)
+        // Shapes a panel (lower left)
         shapesPanel = new JPanel();
         shapesPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
         shapesPanel.setBorder(BorderFactory.createTitledBorder("Shapes"));
@@ -110,6 +109,145 @@ public class PosterEditor extends JFrame {
         controlPanel.add(bringToFrontBtn);
         controlPanel.add(sendToBackBtn);
         controlPanel.add(deleteBtn);
+
+
+        JButton saveBtn = new JButton("Save");
+        JButton loadBtn = new JButton("Load");
+
+        saveBtn.addActionListener(e -> savePosterToFile());
+        loadBtn.addActionListener(e -> loadPosterFromFile());
+
+        controlPanel.add(saveBtn);
+        controlPanel.add(loadBtn);
+    }
+
+    private void savePosterToFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        fileChooser.setDialogTitle("Save Poster");
+
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+
+            // Add .poster extension if not specified
+            if (!file.getName().toLowerCase().endsWith(".poster")) {
+                file = new File(file.getAbsolutePath() + ".poster");
+            }
+
+            try (PrintWriter writer = new PrintWriter(file)) {
+                writer.println("POSTER_FORMAT");
+                writer.println(posterElements.size());
+
+                for (PosterElement element : posterElements) {
+                    writer.println(element.serialize());
+                }
+
+                JOptionPane.showMessageDialog(this,
+                        "Poster saved successfully to " + file.getName(),
+                        "Save Complete", JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Error saving poster: " + ex.getMessage(),
+                        "Save Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void loadPosterFromFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        fileChooser.setDialogTitle("Load Poster");
+
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String formatLine = reader.readLine();
+
+                if (!"POSTER_FORMAT".equals(formatLine)) {
+                    throw new IOException("Unsupported file format");
+                }
+
+                String countLine = reader.readLine();
+                int count = Integer.parseInt(countLine);
+
+                List<PosterElement> newElements = new ArrayList<>();
+
+                for (int i = 0; i < count; i++) {
+                    String elementData = reader.readLine();
+                    if (elementData == null) {
+                        break;
+                    }
+
+                    // Normalize the data to handle different locale formats
+                    String normalizedData = normalizeTransformData(elementData);
+                    System.out.println("Original: " + elementData);
+                    System.out.println("Normalized: " + normalizedData);
+
+                    PosterElement element = PosterElement.deserialize(normalizedData);
+                    if (element != null) {
+                        // Debug print to verify transform
+                        System.out.println("Loaded element: " + normalizedData);
+                        System.out.println("Transform: " + element.getTransform());
+
+                        newElements.add(element);
+                    }
+                }
+
+                // Replace current elements with loaded ones
+                posterElements.clear();
+                posterElements.addAll(newElements);
+                selectedElement = null;
+                posterPanel.repaint();
+
+                JOptionPane.showMessageDialog(this,
+                        "Poster loaded successfully from " + file.getName(),
+                        "Load Complete", JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (IOException | NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Error loading poster: " + ex.getMessage(),
+                        "Load Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private String normalizeTransformData(String line) {
+        if (!line.contains(":")) {
+            return line;
+        }
+
+        String[] mainParts = line.split(":", -1);
+        if (mainParts.length < 3) {
+            return line;
+        }
+
+        // Last part contains transform data
+        String transformData = mainParts[mainParts.length - 1];
+        String[] numbers = transformData.split(",");
+
+        if (numbers.length == 6) {
+            StringBuilder normalizedTransform = new StringBuilder();
+            for (int i = 0; i < 6; i++) {
+                // Replace commas in numbers with periods
+                if (i > 0) normalizedTransform.append(",");
+                normalizedTransform.append(numbers[i].replace(',', '.'));
+            }
+
+            // Rebuild the line with normalized transform data
+            StringBuilder result = new StringBuilder(mainParts[0]);
+            for (int i = 1; i < mainParts.length - 1; i++) {
+                result.append(":").append(mainParts[i]);
+            }
+            result.append(":").append(normalizedTransform);
+
+            return result.toString();
+        }
+
+        return line;
     }
 
     private void loadImageThumbnails() {
@@ -173,7 +311,6 @@ public class PosterEditor extends JFrame {
         return thumbnail;
     }
 
-
     private void createShapeGallery() {
         // Create a list of shapes to display
         List<PosterElement> shapesList = new ArrayList<>();
@@ -234,7 +371,6 @@ public class PosterEditor extends JFrame {
         );
     }
 
-    //TODO dodac to do PosterElement a nie tutaj
     private void moveSelectedInScreenCoordinates(int dx, int dy) {
         if (selectedElement != null) {
             // Apply screen-oriented translation
@@ -286,6 +422,7 @@ public class PosterEditor extends JFrame {
             posterPanel.repaint();
         }
     }
+
 
     // Poster Panel inner class
     private class PosterPanel extends JPanel implements DropTargetListener {
@@ -349,7 +486,7 @@ public class PosterEditor extends JFrame {
             dragHandleIndex = -1;
             lastMousePoint = p;
 
-            // Iterate from end to select element on top
+            // Iterate from end to select an element on top
             for (int i = posterElements.size() - 1; i >= 0; i--) {
                 PosterElement element = posterElements.get(i);
 
@@ -365,7 +502,7 @@ public class PosterEditor extends JFrame {
                     }
                 }
 
-                // Check if clicked in middle of element
+                // Check if clicked in a middle of element
                 if (element.contains(p)) {
                     selectedElement = element;
                     isDragging = true;
@@ -410,7 +547,7 @@ public class PosterEditor extends JFrame {
                 element.draw(g2d);
             }
 
-            // Draw handles for selected element
+            // Draw handles for a selected element
             if (selectedElement != null) {
                 selectedElement.drawHandles(g2d);
             }

@@ -1,6 +1,9 @@
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
 public class ImageElement extends PosterElement {
     private BufferedImage image;
@@ -80,5 +83,46 @@ public class ImageElement extends PosterElement {
     @Override
     public int getInitialHeight() {
         return image.getHeight();
+    }
+
+
+    @Override
+    public String serialize() {
+        return "IMAGE:" + name + ":" + serializeTransform();
+    }
+
+    public static ImageElement fromString(String data) {
+        if (!data.startsWith("IMAGE:")) {
+            return null;
+        }
+
+        try {
+            String[] parts = data.substring("IMAGE:".length()).split(":", 2);
+            if (parts.length != 2) {
+                System.err.println("Invalid image format: " + data);
+                return null;
+            }
+
+            String imageName = parts[0];
+            AffineTransform transform = parseTransform(parts[1]);
+
+            // Load image from the images directory
+            File imageFile = new File("images", imageName);
+            BufferedImage image = ImageIO.read(imageFile);
+
+            if (image == null) {
+                System.err.println("Could not load image: " + imageName);
+                return null;
+            }
+
+            ImageElement element = new ImageElement(image, imageName);
+            element.transform = transform;  // Directly assign the transform
+
+            return element;
+        } catch (IOException e) {
+            System.err.println("Cannot load image: " + data);
+            e.printStackTrace();
+            return null;
+        }
     }
 }
