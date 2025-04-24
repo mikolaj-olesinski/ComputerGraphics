@@ -112,16 +112,6 @@ public class PosterEditor extends JFrame {
         controlPanel.add(deleteBtn);
     }
 
-    private void moveSelectedInScreenCoordinates(int dx, int dy) {
-        if (selectedElement != null) {
-            // Apply screen-oriented translation
-            AffineTransform moveTransform = new AffineTransform();
-            moveTransform.translate(dx, dy);
-            selectedElement.getTransform().preConcatenate(moveTransform);
-            posterPanel.repaint();
-        }
-    }
-
     private void loadImageThumbnails() {
         // In practice, choose a directory or load from a specific location
         imageDirectory = new File("images");
@@ -135,12 +125,11 @@ public class PosterEditor extends JFrame {
         File[] imageFiles = imageDirectory.listFiles((dir, name) -> {
             name = name.toLowerCase();
             return name.endsWith(".jpg") || name.endsWith(".jpeg") ||
-                    name.endsWith(".png") || name.endsWith(".gif");
+                    name.endsWith(".png");
         });
 
         if (imageFiles == null || imageFiles.length == 0) {
-            JOptionPane.showMessageDialog(this,
-                    "No images in the 'images' directory.");
+            JOptionPane.showMessageDialog(this, "No images in the 'images' directory.");
             return;
         }
 
@@ -184,37 +173,52 @@ public class PosterEditor extends JFrame {
         return thumbnail;
     }
 
+
     private void createShapeGallery() {
-        // Add square
-        JPanel squarePanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setColor(Color.RED);
-                g2d.fillRect(10, 10, THUMBNAIL_SIZE - 20, THUMBNAIL_SIZE - 20);
-            }
-        };
-        squarePanel.setPreferredSize(new Dimension(THUMBNAIL_SIZE, THUMBNAIL_SIZE));
-        squarePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        setupDragSource(squarePanel, new ShapeElement(ShapeType.RECTANGLE, Color.RED));
+        // Create a list of shapes to display
+        List<PosterElement> shapesList = new ArrayList<>();
 
-        // Add circle
-        JPanel circlePanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setColor(Color.BLUE);
-                g2d.fillOval(10, 10, THUMBNAIL_SIZE - 20, THUMBNAIL_SIZE - 20);
-            }
-        };
-        circlePanel.setPreferredSize(new Dimension(THUMBNAIL_SIZE, THUMBNAIL_SIZE));
-        circlePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        setupDragSource(circlePanel, new ShapeElement(ShapeType.CIRCLE, Color.BLUE));
+        // Add rectangles with different colors
+        shapesList.add(new RectangleElement(Color.RED));
+        shapesList.add(new RectangleElement(Color.GREEN));
+        shapesList.add(new RectangleElement(Color.BLUE));
 
-        shapesPanel.add(squarePanel);
-        shapesPanel.add(circlePanel);
+        // Add circles with different colors
+        shapesList.add(new CircleElement(Color.ORANGE));
+        shapesList.add(new CircleElement(Color.MAGENTA));
+        shapesList.add(new CircleElement(Color.CYAN));
+
+        // Add all shapes to the panel
+        for (PosterElement shape : shapesList) {
+            JPanel shapePanel = new JPanel() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    super.paintComponent(g);
+                    Graphics2D g2d = (Graphics2D) g;
+
+                    // Scale the shape to fit the thumbnail
+                    double scale = (double)(THUMBNAIL_SIZE - 20) / shape.getInitialWidth();
+                    AffineTransform savedTransform = shape.getTransform();
+
+                    // Create a temporary transform for displaying the thumbnail
+                    AffineTransform thumbnailTransform = new AffineTransform();
+                    thumbnailTransform.translate(10, 10);
+                    thumbnailTransform.scale(scale, scale);
+                    shape.getTransform().setTransform(thumbnailTransform);
+
+                    // Draw the shape
+                    shape.draw(g2d);
+
+                    // Restore the original transform
+                    shape.getTransform().setTransform(savedTransform);
+                }
+            };
+
+            shapePanel.setPreferredSize(new Dimension(THUMBNAIL_SIZE, THUMBNAIL_SIZE));
+            shapePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+            setupDragSource(shapePanel, shape);
+            shapesPanel.add(shapePanel);
+        }
     }
 
     private void setupDragSource(Component component, PosterElement element) {
@@ -228,6 +232,17 @@ public class PosterEditor extends JFrame {
                     e.startDrag(null, transferable);
                 }
         );
+    }
+
+    //TODO dodac to do PosterElement a nie tutaj
+    private void moveSelectedInScreenCoordinates(int dx, int dy) {
+        if (selectedElement != null) {
+            // Apply screen-oriented translation
+            AffineTransform moveTransform = new AffineTransform();
+            moveTransform.translate(dx, dy);
+            selectedElement.getTransform().preConcatenate(moveTransform);
+            posterPanel.repaint();
+        }
     }
 
     private void rotateSelected(double angle) {
