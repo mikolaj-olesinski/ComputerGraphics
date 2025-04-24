@@ -48,14 +48,14 @@ public class PosterEditor extends JFrame {
 
         // Thumbnail images panel (upper left)
         thumbnailPanel = new JPanel();
-        thumbnailPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        thumbnailPanel.setLayout(new GridLayout(0, 3, 5, 5));
         thumbnailPanel.setBorder(BorderFactory.createTitledBorder("Images"));
         JScrollPane thumbnailScroll = new JScrollPane(thumbnailPanel);
         thumbnailScroll.setPreferredSize(new Dimension(300, 350));
 
         // Shapes a panel (lower left)
         shapesPanel = new JPanel();
-        shapesPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        shapesPanel.setLayout(new GridLayout(0, 3, 5, 5));
         shapesPanel.setBorder(BorderFactory.createTitledBorder("Shapes"));
         JScrollPane shapesScroll = new JScrollPane(shapesPanel);
         shapesScroll.setPreferredSize(new Dimension(300, 350));
@@ -140,10 +140,9 @@ public class PosterEditor extends JFrame {
 
             try (PrintWriter writer = new PrintWriter(file)) {
                 writer.println("POSTER_FORMAT");
-                writer.println(posterElements.size());
 
                 for (PosterElement element : posterElements) {
-                    writer.println(element.serialize());
+                    writer.println(element.save());
                 }
 
                 JOptionPane.showMessageDialog(this,
@@ -174,28 +173,12 @@ public class PosterEditor extends JFrame {
                     throw new IOException("Unsupported file format");
                 }
 
-                String countLine = reader.readLine();
-                int count = Integer.parseInt(countLine);
-
                 List<PosterElement> newElements = new ArrayList<>();
 
-                for (int i = 0; i < count; i++) {
-                    String elementData = reader.readLine();
-                    if (elementData == null) {
-                        break;
-                    }
-
-                    // Normalize the data to handle different locale formats
-                    String normalizedData = normalizeTransformData(elementData);
-                    System.out.println("Original: " + elementData);
-                    System.out.println("Normalized: " + normalizedData);
-
-                    PosterElement element = PosterElement.deserialize(normalizedData);
+                String elementData;
+                while ((elementData = reader.readLine()) != null) {
+                    PosterElement element = PosterElement.deserialize(elementData);
                     if (element != null) {
-                        // Debug print to verify transform
-                        System.out.println("Loaded element: " + normalizedData);
-                        System.out.println("Transform: " + element.getTransform());
-
                         newElements.add(element);
                     }
                 }
@@ -219,43 +202,8 @@ public class PosterEditor extends JFrame {
         }
     }
 
-    private String normalizeTransformData(String line) {
-        if (!line.contains(":")) {
-            return line;
-        }
-
-        String[] mainParts = line.split(":", -1);
-        if (mainParts.length < 3) {
-            return line;
-        }
-
-        // Last part contains transform data
-        String transformData = mainParts[mainParts.length - 1];
-        String[] numbers = transformData.split(",");
-
-        if (numbers.length == 6) {
-            StringBuilder normalizedTransform = new StringBuilder();
-            for (int i = 0; i < 6; i++) {
-                // Replace commas in numbers with periods
-                if (i > 0) normalizedTransform.append(",");
-                normalizedTransform.append(numbers[i].replace(',', '.'));
-            }
-
-            // Rebuild the line with normalized transform data
-            StringBuilder result = new StringBuilder(mainParts[0]);
-            for (int i = 1; i < mainParts.length - 1; i++) {
-                result.append(":").append(mainParts[i]);
-            }
-            result.append(":").append(normalizedTransform);
-
-            return result.toString();
-        }
-
-        return line;
-    }
 
     private void exportPosterToImage() {
-        // Show file chooser for save location
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
         fileChooser.setDialogTitle("Export Image");
@@ -280,14 +228,12 @@ public class PosterEditor extends JFrame {
             File file = fileChooser.getSelectedFile();
             String format = "png"; // Default format
 
-            // Determine format from extension or filter
             String fileName = file.getName().toLowerCase();
             if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
                 format = "jpg";
             } else if (fileName.endsWith(".bmp")) {
                 format = "bmp";
             } else if (!fileName.endsWith(".png")) {
-                // Add .png extension if no recognized extension
                 file = new File(file.getAbsolutePath() + ".png");
             }
 
@@ -306,11 +252,11 @@ public class PosterEditor extends JFrame {
             return;
         }
 
-        // Create image buffer with exact size needed for all elements
+        // Create image buffer with the exact size needed for all elements
         int width = (int)Math.ceil(bounds.getWidth());
         int height = (int)Math.ceil(bounds.getHeight());
 
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = image.createGraphics();
 
         // Set high quality rendering
@@ -446,11 +392,14 @@ public class PosterEditor extends JFrame {
         shapesList.add(new RectangleElement(Color.RED));
         shapesList.add(new RectangleElement(Color.GREEN));
         shapesList.add(new RectangleElement(Color.BLUE));
+        shapesList.add(new RectangleElement(Color.YELLOW));
 
         // Add circles with different colors
         shapesList.add(new CircleElement(Color.ORANGE));
         shapesList.add(new CircleElement(Color.MAGENTA));
         shapesList.add(new CircleElement(Color.CYAN));
+        shapesList.add(new CircleElement(Color.PINK));
+
 
         // Add all shapes to the panel
         for (PosterElement shape : shapesList) {
@@ -500,28 +449,14 @@ public class PosterEditor extends JFrame {
 
     private void moveSelectedInScreenCoordinates(int dx, int dy) {
         if (selectedElement != null) {
-            // Apply screen-oriented translation
-            AffineTransform moveTransform = new AffineTransform();
-            moveTransform.translate(dx, dy);
-            selectedElement.getTransform().preConcatenate(moveTransform);
+            selectedElement.move(dx, dy);
             posterPanel.repaint();
         }
     }
 
     private void rotateSelected(double angle) {
         if (selectedElement != null) {
-            Rectangle2D bounds = selectedElement.getBounds();
-            double centerX = bounds.getCenterX();
-            double centerY = bounds.getCenterY();
-
-            // Create a new transform for rotation around center
-            AffineTransform rotateTransform = new AffineTransform();
-            rotateTransform.translate(centerX, centerY);
-            rotateTransform.rotate(angle);
-            rotateTransform.translate(-centerX, -centerY);
-
-            // Apply this transform to the element's transform
-            selectedElement.getTransform().preConcatenate(rotateTransform);
+            selectedElement.rotateAroundCenter(angle);
             posterPanel.repaint();
         }
     }
@@ -717,7 +652,7 @@ public class PosterEditor extends JFrame {
                     PosterElement element = (PosterElement) transferable.getTransferData(
                             ElementTransferable.ELEMENT_FLAVOR);
 
-                    // Clone element so it can be added multiple times
+                    // Clone element
                     PosterElement newElement = element.clone();
 
                     // Set element position to drop location

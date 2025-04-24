@@ -4,7 +4,6 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
-// Rectangle shape implementation
 public class RectangleElement extends ShapeElement {
 
     public RectangleElement(Color color) {
@@ -42,7 +41,7 @@ public class RectangleElement extends ShapeElement {
     }
 
     @Override
-    public String serialize() {
+    public String save() {
         return "RECTANGLE:" + colorToString(color) + ":" + serializeTransform();
     }
 
@@ -62,7 +61,7 @@ public class RectangleElement extends ShapeElement {
             AffineTransform transform = parseTransform(parts[1]);
 
             RectangleElement element = new RectangleElement(color);
-            element.transform = transform;  // Ensure transform is assigned properly
+            element.transform = transform;
             return element;
         } catch (Exception e) {
             System.err.println("Error parsing rectangle: " + data);

@@ -4,12 +4,12 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 
-// Circle shape implementation
 public class CircleElement extends ShapeElement {
 
     public CircleElement(Color color) {
         super(color);
     }
+
 
     @Override
     public void draw(Graphics2D g2d) {
@@ -34,6 +34,7 @@ public class CircleElement extends ShapeElement {
         }
     }
 
+
     @Override
     public PosterElement clone() {
         CircleElement clone = (CircleElement) super.clone();
@@ -42,7 +43,7 @@ public class CircleElement extends ShapeElement {
     }
 
     @Override
-    public String serialize() {
+    public String save() {
         return "CIRCLE:" + colorToString(color) + ":" + serializeTransform();
     }
 
@@ -62,7 +63,7 @@ public class CircleElement extends ShapeElement {
             AffineTransform transform = parseTransform(parts[1]);
 
             CircleElement element = new CircleElement(color);
-            element.transform = transform;  // Ensure transform is assigned properly
+            element.transform = transform;
             return element;
         } catch (Exception e) {
             System.err.println("Error parsing circle: " + data);

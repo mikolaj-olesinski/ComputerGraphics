@@ -7,16 +7,36 @@ public abstract class PosterElement implements Cloneable {
     protected static final int HANDLE_SIZE = 8;
 
     public abstract void draw(Graphics2D g2d);
-    public abstract Rectangle2D getBounds();
     public abstract boolean contains(Point p);
     public abstract int getInitialWidth();
     public abstract int getInitialHeight();
     public abstract Point2D[] getCornerPoints();
-    public abstract String serialize();
+    public abstract String save();
 
     public AffineTransform getTransform() {
         return transform;
     }
+
+    public void move(int dx, int dy) {
+        AffineTransform moveTransform = new AffineTransform();
+        moveTransform.translate(dx, dy);
+        this.transform.preConcatenate(moveTransform);
+    }
+
+    public void rotateAroundCenter(double angle) {
+        Rectangle2D bounds = this.getBounds();
+        double centerX = bounds.getCenterX();
+        double centerY = bounds.getCenterY();
+
+        AffineTransform rotateTransform = new AffineTransform();
+        rotateTransform.translate(centerX, centerY);
+        rotateTransform.rotate(angle);
+        rotateTransform.translate(-centerX, -centerY);
+
+        this.transform.preConcatenate(rotateTransform);
+    }
+
+
 
     @Override
     public PosterElement clone() {
@@ -29,10 +49,27 @@ public abstract class PosterElement implements Cloneable {
         }
     }
 
+    public Rectangle2D getBounds() {
+        Point2D[] cornerPoints = getCornerPoints();
+
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+
+        for (Point2D point : cornerPoints) {
+            minX = Math.min(minX, point.getX());
+            minY = Math.min(minY, point.getY());
+            maxX = Math.max(maxX, point.getX());
+            maxY = Math.max(maxY, point.getY());
+        }
+
+        return new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
+    }
+
     // Draw handles for a selected element
     public void drawHandles(Graphics2D g2d) {
-        Point2D[] handles = getHandlePositions(); // Now returns only 4 corner points
-
+        Point2D[] handles = getHandlePositions();
         g2d.setColor(Color.BLACK);
         for (Point2D handle : handles) {
             g2d.fillRect((int)(handle.getX() - HANDLE_SIZE/2),
@@ -40,7 +77,6 @@ public abstract class PosterElement implements Cloneable {
                     HANDLE_SIZE, HANDLE_SIZE);
         }
 
-        // Draw bounding polygon connecting corner points
         g2d.setColor(Color.GRAY);
         g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT,
                 BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0));
@@ -59,7 +95,6 @@ public abstract class PosterElement implements Cloneable {
     public Point2D[] getHandlePositions() {
         Point2D[] cornerPoints = getCornerPoints();
 
-        // Return only 4 corner handles
         return new Point2D[] {
                 cornerPoints[0], // Top-left
                 cornerPoints[1], // Top-right
@@ -84,22 +119,17 @@ public abstract class PosterElement implements Cloneable {
         return -1;
     }
 
-    // Transform element by handle
+    // Transform an element by handle
     public void transformByHandle(int handleIndex, int dx, int dy) {
-        Point2D[] cornerPoints = getCornerPoints();
         Point2D[] handles = getHandlePositions();
         Point2D handle = handles[handleIndex];
 
         // Calculate center of the element
-        double sumX = 0, sumY = 0;
-        for (Point2D corner : cornerPoints) {
-            sumX += corner.getX();
-            sumY += corner.getY();
-        }
-        double centerX = sumX / cornerPoints.length;
-        double centerY = sumY / cornerPoints.length;
+        Rectangle2D bounds = this.getBounds();
+        double centerX = bounds.getCenterX();
+        double centerY = bounds.getCenterY();
 
-        // Corner handles - perform scaling and rotation
+        // perform scaling and rotation
         double oldAngle = Math.atan2(
                 handle.getY() - centerY,
                 handle.getX() - centerX
@@ -121,7 +151,6 @@ public abstract class PosterElement implements Cloneable {
         double scaleFactor = newDist / oldDist;
 
         if (scaleFactor > 0.1) { // Prevent scaling to zero or negative
-            // Apply transformations relative to the center
             AffineTransform newTransform = new AffineTransform();
             newTransform.translate(centerX, centerY);
             newTransform.rotate(angleChange);
@@ -148,14 +177,12 @@ public abstract class PosterElement implements Cloneable {
     protected String serializeTransform() {
         double[] matrix = new double[6];
         transform.getMatrix(matrix);
-        // Use period as decimal separator regardless of locale
         return String.format(Locale.US, "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f",
                 matrix[0], matrix[1], matrix[2],
                 matrix[3], matrix[4], matrix[5]);
     }
 
 
-    // Parse transform from string
     protected static AffineTransform parseTransform(String data) {
         String[] parts = data.split(",");
         if (parts.length != 6) {
@@ -166,12 +193,9 @@ public abstract class PosterElement implements Cloneable {
         try {
             double[] matrix = new double[6];
             for (int i = 0; i < 6; i++) {
-                // Replace any commas in numbers with periods for parsing
-                String numberStr = parts[i].replace(',', '.');
-                matrix[i] = Double.parseDouble(numberStr);
+                matrix[i] = Double.parseDouble(parts[i]);
             }
 
-            // Create transform directly from the matrix values
             return new AffineTransform(
                     matrix[0], matrix[1], matrix[2],
                     matrix[3], matrix[4], matrix[5]
@@ -182,6 +206,5 @@ public abstract class PosterElement implements Cloneable {
             return new AffineTransform();
         }
     }
-
 
 }

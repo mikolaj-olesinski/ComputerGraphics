@@ -2,7 +2,6 @@ import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
-// Abstract base class for shape elements
 public abstract class ShapeElement extends PosterElement {
     protected Color color;
     protected static final int DEFAULT_SIZE = 100;
@@ -39,36 +38,16 @@ public abstract class ShapeElement extends PosterElement {
         return transformedPoints;
     }
 
-    @Override
-    public Rectangle2D getBounds() {
-        Point2D[] cornerPoints = getCornerPoints();
-
-        double minX = Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE;
-        double maxX = Double.MIN_VALUE;
-        double maxY = Double.MIN_VALUE;
-
-        for (Point2D point : cornerPoints) {
-            minX = Math.min(minX, point.getX());
-            minY = Math.min(minY, point.getY());
-            maxX = Math.max(maxX, point.getX());
-            maxY = Math.max(maxY, point.getY());
-        }
-
-        return new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
-    }
-
-
     protected static String colorToString(Color color) {
-        return String.format("%d,%d,%d,%d",
+        return String.format("%d,%d,%d",
                 color.getRed(), color.getGreen(),
-                color.getBlue(), color.getAlpha());
+                color.getBlue());
     }
 
     // Convert string to color
     protected static Color stringToColor(String str) {
         String[] parts = str.split(",");
-        if (parts.length != 4) {
+        if (parts.length != 3) {
             return Color.BLACK;
         }
 
@@ -76,8 +55,7 @@ public abstract class ShapeElement extends PosterElement {
             int r = Integer.parseInt(parts[0]);
             int g = Integer.parseInt(parts[1]);
             int b = Integer.parseInt(parts[2]);
-            int a = Integer.parseInt(parts[3]);
-            return new Color(r, g, b, a);
+            return new Color(r, g, b);
         } catch (NumberFormatException e) {
             return Color.BLACK;
         }
