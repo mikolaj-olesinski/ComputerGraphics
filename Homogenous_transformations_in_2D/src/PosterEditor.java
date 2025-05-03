@@ -202,7 +202,6 @@ public class PosterEditor extends JFrame {
         }
     }
 
-
     private void exportPosterToImage() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
@@ -563,7 +562,6 @@ public class PosterEditor extends JFrame {
                         return;
                     }
                 }
-
                 // Check if clicked in a middle of element
                 if (element.contains(p)) {
                     selectedElement = element;

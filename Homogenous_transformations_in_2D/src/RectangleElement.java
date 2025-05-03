@@ -1,6 +1,5 @@
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
@@ -28,7 +27,7 @@ public class RectangleElement extends ShapeElement {
             transform.inverseTransform(p, inversePt);
             return new Rectangle2D.Double(0, 0, DEFAULT_SIZE, DEFAULT_SIZE)
                     .contains(inversePt);
-        } catch (NoninvertibleTransformException e) {
+        } catch (Exception e) {
             return false;
         }
     }

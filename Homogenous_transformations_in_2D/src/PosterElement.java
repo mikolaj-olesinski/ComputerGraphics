@@ -150,7 +150,7 @@ public abstract class PosterElement implements Cloneable {
         );
         double scaleFactor = newDist / oldDist;
 
-        if (scaleFactor > 0.1) { // Prevent scaling to zero or negative
+        if (scaleFactor > 0) { // Prevent scaling to negative
             AffineTransform newTransform = new AffineTransform();
             newTransform.translate(centerX, centerY);
             newTransform.rotate(angleChange);

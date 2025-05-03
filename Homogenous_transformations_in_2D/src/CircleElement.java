@@ -1,7 +1,6 @@
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 
 public class CircleElement extends ShapeElement {
@@ -29,7 +28,7 @@ public class CircleElement extends ShapeElement {
             transform.inverseTransform(p, inversePt);
             return new Ellipse2D.Double(0, 0, ShapeElement.DEFAULT_SIZE, ShapeElement.DEFAULT_SIZE)
                     .contains(inversePt);
-        } catch (NoninvertibleTransformException e) {
+        } catch (Exception e) {
             return false;
         }
     }

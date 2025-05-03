@@ -49,7 +49,7 @@ public class ImageElement extends PosterElement {
             transform.inverseTransform(p, inversePt);
             return new Rectangle2D.Double(0, 0, image.getWidth(), image.getHeight())
                     .contains(inversePt);
-        } catch (NoninvertibleTransformException e) {
+        } catch (Exception e) {
             return false;
         }
     }
