@@ -63,7 +63,7 @@ public class GouraudShadingDemo extends JPanel {
                 triangle = new Triangle2D(
                         new int[] {image.getWidth()/2, image.getWidth()/4, 3*image.getWidth()/4},
                         new int[] {30, image.getHeight()-30, image.getHeight()-30},
-                        new Color[] {Color.RED, Color.GREEN, Color.BLUE}
+                        new Color[] {Color.BLUE, Color.RED, Color.GREEN}
                 );
                 break;
 
