@@ -1,485 +1,469 @@
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class Triangle2D {
-    // Współrzędne wierzchołków
-    private int x1, y1, x2, y2, x3, y3;
+    // Wierzchołki trójkąta (współrzędne x, y)
+    private int[] x;
+    private int[] y;
 
-    // Kolory wierzchołków
-    private Color color1, color2, color3;
+    // Kolory wierzchołków (R, G, B)
+    private Color[] colors;
 
-    /**
-     * Konstruktor trójkąta
-     */
-    public Triangle2D(int x1, int y1, int x2, int y2, int x3, int y3,
-                      Color color1, Color color2, Color color3) {
-        this.x1 = x1;
-        this.y1 = y1;
-        this.x2 = x2;
-        this.y2 = y2;
-        this.x3 = x3;
-        this.y3 = y3;
-        this.color1 = color1;
-        this.color2 = color2;
-        this.color3 = color3;
-    }
-
-    /**
-     * Zwraca interpolowany kolor dla punktu (x,y) wewnątrz trójkąta
-     */
-    private Color interpolateColor(int x, int y) {
-        // Obliczanie współrzędnych barycentrycznych
-        double denominator = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
-
-        // Zabezpieczenie przed dzieleniem przez zero
-        if (Math.abs(denominator) < 0.0001) {
-            return Color.BLACK; // Domyślny kolor w przypadku degeneracji trójkąta
+    public Triangle2D(int[] x, int[] y, Color[] colors) {
+        if (x.length != 3 || y.length != 3 || colors.length != 3) {
+            throw new IllegalArgumentException("Trójkąt musi mieć dokładnie 3 wierzchołki!");
         }
 
-        double lambda1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / denominator;
-        double lambda2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / denominator;
-        double lambda3 = 1 - lambda1 - lambda2;
+        this.x = x.clone();
+        this.y = y.clone();
+        this.colors = colors.clone();
 
-        // Zabezpieczenie przed błędami numerycznymi
-        if (lambda1 < 0) lambda1 = 0;
-        if (lambda2 < 0) lambda2 = 0;
-        if (lambda3 < 0) lambda3 = 0;
+        // Sortowanie wierzchołków według wartości y (od najmniejszej do największej)
+        sortVerticesByY();
+    }
 
-        // Normalizacja współczynników
-        double sum = lambda1 + lambda2 + lambda3;
-        if (sum > 0) {
-            lambda1 /= sum;
-            lambda2 /= sum;
-            lambda3 /= sum;
+    private void sortVerticesByY() {
+        Integer[] idx = {0, 1, 2};
+        // Sortujemy indeksy wg wartości y[idx[i]]
+        Arrays.sort(idx, Comparator.comparingInt(i -> y[i]));
+
+        // Tworzymy nowe, posortowane tablice
+        int[] newX = new int[3], newY = new int[3];
+        Color[] newC = new Color[3];
+        for (int i = 0; i < 3; i++) {
+            newX[i] = x[idx[i]];
+            newY[i] = y[idx[i]];
+            newC[i] = colors[idx[i]];
+        }
+        // Podmieniamy oryginały
+        x = newX;
+        y = newY;
+        colors = newC;
+    }
+
+    public void gouraudShadeToImage(BufferedImage image) {
+        // Sprawdzenie czy obraz istnieje
+        if (image == null) {
+            throw new IllegalArgumentException("Obraz nie może być null!");
         }
 
-        // Interpolacja kolorów
-        int r = (int)(lambda1 * color1.getRed() + lambda2 * color2.getRed() + lambda3 * color3.getRed());
-        int g = (int)(lambda1 * color1.getGreen() + lambda2 * color2.getGreen() + lambda3 * color3.getGreen());
-        int b = (int)(lambda1 * color1.getBlue() + lambda2 * color2.getBlue() + lambda3 * color3.getBlue());
+        // Szerokość i wysokość obrazu
+        int width = image.getWidth();
+        int height = image.getHeight();
 
-        // Zabezpieczenie przed przekroczeniem zakresu
-        r = Math.min(255, Math.max(0, r));
-        g = Math.min(255, Math.max(0, g));
-        b = Math.min(255, Math.max(0, b));
+        // Po sortowaniu wierzchołków mamy:
+        // y[0] <= y[1] <= y[2]
 
-        return new Color(r, g, b);
-    }
+        // Podział na dwa przypadki: trójkąt "płaski" i ogólny
+        // Przypadek gdy środkowy wierzchołek ma inną wartość y niż górny i dolny
+        if (y[0] != y[1] && y[1] != y[2]) {
+            // Znajdź x dla punktu na krawędzi 0-2 o tej samej wysokości co środkowy wierzchołek
+            float t = (float)(y[1] - y[0]) / (y[2] - y[0]);
+            int x4 = Math.round(x[0] + t * (x[2] - x[0]));
 
-    /**
-     * Sprawdza czy punkt (x,y) znajduje się wewnątrz trójkąta
-     */
-    private boolean isPointInTriangle(int x, int y) {
-        // Obliczanie współrzędnych barycentrycznych
-        double denominator = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
+            // Interpolacja koloru dla nowego punktu
+            int r4 = Math.round(colors[0].getRed() + t * (colors[2].getRed() - colors[0].getRed()));
+            int g4 = Math.round(colors[0].getGreen() + t * (colors[2].getGreen() - colors[0].getGreen()));
+            int b4 = Math.round(colors[0].getBlue() + t * (colors[2].getBlue() - colors[0].getBlue()));
+            Color color4 = new Color(
+                    Math.max(0, Math.min(255, r4)),
+                    Math.max(0, Math.min(255, g4)),
+                    Math.max(0, Math.min(255, b4))
+            );
 
-        // Degeneracja trójkąta
-        if (Math.abs(denominator) < 0.0001) {
-            return false;
+            // Cieniowanie górnego trójkąta
+            fillFlatTriangle(image, x[0], y[0], x[1], y[1], x4, y[1],
+                    colors[0], colors[1], color4, width, height);
+
+            // Cieniowanie dolnego trójkąta
+            fillFlatTriangle(image, x[1], y[1], x4, y[1], x[2], y[2],
+                    colors[1], color4, colors[2], width, height);
         }
-
-        double lambda1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / denominator;
-        double lambda2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / denominator;
-        double lambda3 = 1 - lambda1 - lambda2;
-
-        // Punkt jest wewnątrz trójkąta, jeśli wszystkie współczynniki są nieujemne
-        return lambda1 >= 0 && lambda2 >= 0 && lambda3 >= 0;
+        // Przypadek gdy dwa wierzchołki mają tę samą wartość y (trójkąt "płaski")
+        else if (y[0] == y[1]) {
+            // Przypadek z płaskim wierzchem
+            fillFlatTopTriangle(image, x[0], y[0], x[1], y[1], x[2], y[2],
+                    colors[0], colors[1], colors[2], width, height);
+        }
+        else { // y[1] == y[2]
+            // Przypadek z płaskim spodem
+            fillFlatBottomTriangle(image, x[0], y[0], x[1], y[1], x[2], y[2],
+                    colors[0], colors[1], colors[2], width, height);
+        }
     }
 
-    /**
-     * Znajduje bounding box trójkąta
-     */
-    private Rectangle getBoundingBox() {
-        int minX = Math.min(Math.min(x1, x2), x3);
-        int minY = Math.min(Math.min(y1, y2), y3);
-        int maxX = Math.max(Math.max(x1, x2), x3);
-        int maxY = Math.max(Math.max(y1, y2), y3);
+    // Rysuje trójkąt z płaskim wierzchołkiem (dwa górne wierzchołki mają tę samą wartość y)
+    private void fillFlatTopTriangle(BufferedImage image, int x1, int y1, int x2, int y2, int x3, int y3,
+                                     Color c1, Color c2, Color c3, int width, int height) {
+        // Upewniamy się, że y1 == y2 < y3
+        assert y1 == y2 && y2 < y3;
 
-        return new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        // Wyznaczenie zakresu y do rysowania
+        int yStart = Math.max(0, y1);
+        int yEnd = Math.min(height - 1, y3);
+
+        // Obliczamy odwrotność wysokości do interpolacji
+        float invHeight = 1.0f / (y3 - y1);
+
+        for (int y = yStart; y <= yEnd; y++) {
+            // Współczynnik interpolacji dla krawędzi
+            float t = (float)(y - y1) * invHeight;
+
+            // Obliczenie lewej i prawej krawędzi
+            int xLeft = Math.round(x1 + t * (x3 - x1));
+            int xRight = Math.round(x2 + t * (x3 - x2));
+
+            // Interpolacja kolorów
+            Color colorLeft = interpolateColor(c1, c3, t);
+            Color colorRight = interpolateColor(c2, c3, t);
+
+            // Upewniamy się, że xLeft <= xRight
+            if (xLeft > xRight) {
+                int tempX = xLeft; xLeft = xRight; xRight = tempX;
+                Color tempColor = colorLeft; colorLeft = colorRight; colorRight = tempColor;
+            }
+
+            // Ograniczenie do szerokości obrazu
+            xLeft = Math.max(0, Math.min(width - 1, xLeft));
+            xRight = Math.max(0, Math.min(width - 1, xRight));
+
+            // Rysowanie scanline z interpolacją kolorów
+            drawScanline(image, y, xLeft, xRight, colorLeft, colorRight);
+        }
     }
 
-    /**
-     * Rysuje trójkąt z cieniowaniem Gourauda do BufferedImage
-     */
-    public void drawGouraudToImage(BufferedImage image) {
-        if (image == null) return;
+    // Rysuje trójkąt z płaskim spodem (dwa dolne wierzchołki mają tę samą wartość y)
+    private void fillFlatBottomTriangle(BufferedImage image, int x1, int y1, int x2, int y2, int x3, int y3,
+                                        Color c1, Color c2, Color c3, int width, int height) {
+        // Upewniamy się, że y1 < y2 == y3
+        assert y1 < y2 && y2 == y3;
 
-        Rectangle bbox = getBoundingBox();
-        int minX = Math.max(0, bbox.x);
-        int minY = Math.max(0, bbox.y);
-        int maxX = Math.min(image.getWidth() - 1, bbox.x + bbox.width - 1);
-        int maxY = Math.min(image.getHeight() - 1, bbox.y + bbox.height - 1);
+        // Wyznaczenie zakresu y do rysowania
+        int yStart = Math.max(0, y1);
+        int yEnd = Math.min(height - 1, y2);
 
-        // Dla każdego piksela w bounding box sprawdź czy jest wewnątrz trójkąta
-        // i zastosuj cieniowanie Gourauda
-        for (int y = minY; y <= maxY; y++) {
-            for (int x = minX; x <= maxX; x++) {
-                if (isPointInTriangle(x, y)) {
-                    Color interpolatedColor = interpolateColor(x, y);
-                    image.setRGB(x, y, interpolatedColor.getRGB());
+        // Obliczamy odwrotność wysokości do interpolacji
+        float invHeight = 1.0f / (y2 - y1);
+
+        for (int y = yStart; y <= yEnd; y++) {
+            // Współczynnik interpolacji dla krawędzi
+            float t = (float)(y - y1) * invHeight;
+
+            // Obliczenie lewej i prawej krawędzi
+            int xLeft = Math.round(x1 + t * (x2 - x1));
+            int xRight = Math.round(x1 + t * (x3 - x1));
+
+            // Interpolacja kolorów
+            Color colorLeft = interpolateColor(c1, c2, t);
+            Color colorRight = interpolateColor(c1, c3, t);
+
+            // Upewniamy się, że xLeft <= xRight
+            if (xLeft > xRight) {
+                int tempX = xLeft; xLeft = xRight; xRight = tempX;
+                Color tempColor = colorLeft; colorLeft = colorRight; colorRight = tempColor;
+            }
+
+            // Ograniczenie do szerokości obrazu
+            xLeft = Math.max(0, Math.min(width - 1, xLeft));
+            xRight = Math.max(0, Math.min(width - 1, xRight));
+
+            // Rysowanie scanline z interpolacją kolorów
+            drawScanline(image, y, xLeft, xRight, colorLeft, colorRight);
+        }
+    }
+
+    // Rysuje ogólny trójkąt płaski (jeden z wierzchołków ma taką samą wartość y jak inny)
+    private void fillFlatTriangle(BufferedImage image, int x1, int y1, int x2, int y2, int x3, int y3,
+                                  Color c1, Color c2, Color c3, int width, int height) {
+        // Wyznaczenie zakresu y do rysowania
+        int yStart = Math.max(0, Math.min(height - 1, y1));
+        int yEnd = Math.max(0, Math.min(height - 1, y3));
+
+        // Czy to jest trójkąt z płaskim wierzchem czy spodem?
+        if (y1 == y2) {
+            fillFlatTopTriangle(image, x1, y1, x2, y2, x3, y3, c1, c2, c3, width, height);
+        } else if (y2 == y3) {
+            fillFlatBottomTriangle(image, x1, y1, x2, y2, x3, y3, c1, c2, c3, width, height);
+        } else {
+            // W przeciwnym razie używamy ogólnego przypadku z interpolacją
+            float invHeight = 1.0f / (y3 - y1);
+
+            for (int y = yStart; y <= yEnd; y++) {
+                float t = (float)(y - y1) * invHeight;
+
+                // Określenie, czy jesteśmy w górnej czy dolnej części trójkąta
+                boolean topPart = y < y2;
+
+                int xLeft, xRight;
+                Color colorLeft, colorRight;
+
+                if (topPart) {
+                    // Górna część trójkąta
+                    float t1 = (y1 == y2) ? 0 : (float)(y - y1) / (y2 - y1);
+                    float t2 = (float)(y - y1) / (y3 - y1);
+
+                    xLeft = Math.round(x1 + t1 * (x2 - x1));
+                    xRight = Math.round(x1 + t2 * (x3 - x1));
+
+                    colorLeft = interpolateColor(c1, c2, t1);
+                    colorRight = interpolateColor(c1, c3, t2);
+                } else {
+                    // Dolna część trójkąta
+                    float t1 = (y2 == y3) ? 0 : (float)(y - y2) / (y3 - y2);
+                    float t2 = (float)(y - y1) / (y3 - y1);
+
+                    xLeft = Math.round(x2 + t1 * (x3 - x2));
+                    xRight = Math.round(x1 + t2 * (x3 - x1));
+
+                    colorLeft = interpolateColor(c2, c3, t1);
+                    colorRight = interpolateColor(c1, c3, t2);
                 }
+
+                // Upewniamy się, że xLeft <= xRight
+                if (xLeft > xRight) {
+                    int tempX = xLeft; xLeft = xRight; xRight = tempX;
+                    Color tempColor = colorLeft; colorLeft = colorRight; colorRight = tempColor;
+                }
+
+                // Ograniczenie do szerokości obrazu
+                xLeft = Math.max(0, Math.min(width - 1, xLeft));
+                xRight = Math.max(0, Math.min(width - 1, xRight));
+
+                // Rysowanie scanline z interpolacją kolorów
+                drawScanline(image, y, xLeft, xRight, colorLeft, colorRight);
+            }
+        }
+    }
+
+    // Pomocnicza metoda do interpolacji kolorów
+    private Color interpolateColor(Color c1, Color c2, float t) {
+        int r = Math.round(c1.getRed() + t * (c2.getRed() - c1.getRed()));
+        int g = Math.round(c1.getGreen() + t * (c2.getGreen() - c1.getGreen()));
+        int b = Math.round(c1.getBlue() + t * (c2.getBlue() - c1.getBlue()));
+
+        return new Color(
+                Math.max(0, Math.min(255, r)),
+                Math.max(0, Math.min(255, g)),
+                Math.max(0, Math.min(255, b))
+        );
+    }
+
+    // Metoda rysująca pojedynczą linię scanline z interpolacją kolorów
+    private void drawScanline(BufferedImage image, int y, int xLeft, int xRight, Color colorLeft, Color colorRight) {
+        float pixelCount = xRight - xLeft + 1;
+        if (pixelCount <= 0) return;
+
+        // Przyrosty kolorów
+        float rIncrement = (colorRight.getRed() - colorLeft.getRed()) / pixelCount;
+        float gIncrement = (colorRight.getGreen() - colorLeft.getGreen()) / pixelCount;
+        float bIncrement = (colorRight.getBlue() - colorLeft.getBlue()) / pixelCount;
+
+        // Początkowe wartości kolorów
+        float r = colorLeft.getRed();
+        float g = colorLeft.getGreen();
+        float b = colorLeft.getBlue();
+
+        // Wypełnienie wiersza pikselami z interpolowanymi kolorami
+        for (int x = xLeft; x <= xRight; x++) {
+            Color pixelColor = new Color(
+                    Math.max(0, Math.min(255, Math.round(r))),
+                    Math.max(0, Math.min(255, Math.round(g))),
+                    Math.max(0, Math.min(255, Math.round(b)))
+            );
+
+            image.setRGB(x, y, pixelColor.getRGB());
+
+            // Inkrementacja kolorów
+            r += rIncrement;
+            g += gIncrement;
+            b += bIncrement;
+        }
+    }
+
+
+    /**
+     * Wykonuje cieniowanie Gourauda dla trójkąta bezpośrednio na ekranie
+     * @param graphics obiekt Graphics do rysowania
+     */
+    public void gouraudShadeToScreen(Graphics graphics) {
+        // Sprawdzenie czy obiekt Graphics istnieje
+        if (graphics == null) {
+            throw new IllegalArgumentException("Obiekt Graphics nie może być null!");
+        }
+
+        // Zakładamy, że obszar rysowania jest wystarczająco duży, więc nie sprawdzamy granic
+
+        // Podział na dwa przypadki: trójkąt "płaski" i ogólny
+        // Przypadek gdy środkowy wierzchołek ma inną wartość y niż górny i dolny
+        if (y[0] != y[1] && y[1] != y[2]) {
+            // Znajdź x dla punktu na krawędzi 0-2 o tej samej wysokości co środkowy wierzchołek
+            float t = (float)(y[1] - y[0]) / (y[2] - y[0]);
+            int x4 = Math.round(x[0] + t * (x[2] - x[0]));
+
+            // Interpolacja koloru dla nowego punktu
+            int r4 = Math.round(colors[0].getRed() + t * (colors[2].getRed() - colors[0].getRed()));
+            int g4 = Math.round(colors[0].getGreen() + t * (colors[2].getGreen() - colors[0].getGreen()));
+            int b4 = Math.round(colors[0].getBlue() + t * (colors[2].getBlue() - colors[0].getBlue()));
+            Color color4 = new Color(
+                    Math.max(0, Math.min(255, r4)),
+                    Math.max(0, Math.min(255, g4)),
+                    Math.max(0, Math.min(255, b4))
+            );
+
+            // Cieniowanie górnego trójkąta
+            drawGouraudTrianglePartToScreen(graphics, x[0], y[0], x[1], y[1], x4, y[1],
+                    colors[0], colors[1], color4);
+
+            // Cieniowanie dolnego trójkąta
+            drawGouraudTrianglePartToScreen(graphics, x[1], y[1], x4, y[1], x[2], y[2],
+                    colors[1], color4, colors[2]);
+        }
+        // Przypadek gdy dwa wierzchołki mają tę samą wartość y
+        else {
+            // Jeśli górne dwa wierzchołki mają tę samą wartość y
+            if (y[0] == y[1]) {
+                drawGouraudTrianglePartToScreen(graphics, x[0], y[0], x[1], y[1], x[2], y[2],
+                        colors[0], colors[1], colors[2]);
+            }
+            // Jeśli dolne dwa wierzchołki mają tę samą wartość y
+            else {
+                drawGouraudTrianglePartToScreen(graphics, x[0], y[0], x[1], y[1], x[2], y[2],
+                        colors[0], colors[1], colors[2]);
             }
         }
     }
 
     /**
-     * Rysuje trójkąt z cieniowaniem Gourauda na ekranie
+     * Cieniowanie Gourauda dla pojedynczej części trójkąta bezpośrednio na ekranie
      */
-    public void drawGouraudToScreen(Graphics g) {
-        if (g == null) return;
+    private void drawGouraudTrianglePartToScreen(Graphics graphics, int x1, int y1, int x2, int y2, int x3, int y3,
+                                                 Color c1, Color c2, Color c3) {
 
-        Rectangle bbox = getBoundingBox();
+        // Wyznaczenie zakresu y do rysowania
+        int yStart = y1;
+        int yEnd = y3;
 
-        // Dla każdego piksela w bounding box sprawdź czy jest wewnątrz trójkąta
-        // i zastosuj cieniowanie Gourauda
-        for (int y = bbox.y; y < bbox.y + bbox.height; y++) {
-            for (int x = bbox.x; x < bbox.x + bbox.width; x++) {
-                if (isPointInTriangle(x, y)) {
-                    Color interpolatedColor = interpolateColor(x, y);
-                    g.setColor(interpolatedColor);
-                    g.fillRect(x, y, 1, 1);
+        // Dla każdego wiersza skanowania
+        for (int y = yStart; y <= yEnd; y++) {
+            // Współczynnik interpolacji dla krawędzi
+            float beta = (y1 == y3) ? 0 : (float)(y - y1) / (y3 - y1);
+
+            // Obliczenie lewej i prawej krawędzi
+            int xLeft, xRight;
+            Color colorLeft, colorRight;
+
+            if (y < y2) {
+                // Górna część trójkąta
+                float t1 = (y1 == y2) ? 0 : (float)(y - y1) / (y2 - y1);
+                float t2 = (y1 == y3) ? 0 : (float)(y - y1) / (y3 - y1);
+
+                int xl = Math.round(x1 + t1 * (x2 - x1));
+                int xr = Math.round(x1 + t2 * (x3 - x1));
+
+                // Interpolacja kolorów
+                int rl = Math.round(c1.getRed() + t1 * (c2.getRed() - c1.getRed()));
+                int gl = Math.round(c1.getGreen() + t1 * (c2.getGreen() - c1.getGreen()));
+                int bl = Math.round(c1.getBlue() + t1 * (c2.getBlue() - c1.getBlue()));
+
+                int rr = Math.round(c1.getRed() + t2 * (c3.getRed() - c1.getRed()));
+                int gr = Math.round(c1.getGreen() + t2 * (c3.getGreen() - c1.getGreen()));
+                int br = Math.round(c1.getBlue() + t2 * (c3.getBlue() - c1.getBlue()));
+
+                colorLeft = new Color(
+                        Math.max(0, Math.min(255, rl)),
+                        Math.max(0, Math.min(255, gl)),
+                        Math.max(0, Math.min(255, bl))
+                );
+
+                colorRight = new Color(
+                        Math.max(0, Math.min(255, rr)),
+                        Math.max(0, Math.min(255, gr)),
+                        Math.max(0, Math.min(255, br))
+                );
+
+                if (xl <= xr) {
+                    xLeft = xl;
+                    xRight = xr;
+                } else {
+                    xLeft = xr;
+                    xRight = xl;
+                    Color temp = colorLeft;
+                    colorLeft = colorRight;
+                    colorRight = temp;
                 }
-            }
-        }
-    }
+            } else {
+                // Dolna część trójkąta
+                float t1 = (y2 == y3) ? 0 : (float)(y - y2) / (y3 - y2);
+                float t2 = (y1 == y3) ? 0 : (float)(y - y1) / (y3 - y1);
 
-    /**
-     * Zoptymalizowana wersja rysowania z cieniowaniem Gourauda do BufferedImage
-     * używająca algorytmu skanowania linii (scanline)
-     */
-    public void drawGouraudToImageOptimized(BufferedImage image) {
-        if (image == null) return;
+                int xl = Math.round(x2 + t1 * (x3 - x2));
+                int xr = Math.round(x1 + t2 * (x3 - x1));
 
-        // Sortowanie wierzchołków względem współrzędnej y (od najmniejszej)
-        int[] xValues = {x1, x2, x3};
-        int[] yValues = {y1, y2, y3};
-        Color[] colors = {color1, color2, color3};
+                // Interpolacja kolorów
+                int rl = Math.round(c2.getRed() + t1 * (c3.getRed() - c2.getRed()));
+                int gl = Math.round(c2.getGreen() + t1 * (c3.getGreen() - c2.getGreen()));
+                int bl = Math.round(c2.getBlue() + t1 * (c3.getBlue() - c2.getBlue()));
 
-        // Proste sortowanie bąbelkowe
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2 - i; j++) {
-                if (yValues[j] > yValues[j + 1]) {
-                    // Zamiana współrzędnych y
-                    int tempY = yValues[j];
-                    yValues[j] = yValues[j + 1];
-                    yValues[j + 1] = tempY;
+                int rr = Math.round(c1.getRed() + t2 * (c3.getRed() - c1.getRed()));
+                int gr = Math.round(c1.getGreen() + t2 * (c3.getGreen() - c1.getGreen()));
+                int br = Math.round(c1.getBlue() + t2 * (c3.getBlue() - c1.getBlue()));
 
-                    // Zamiana współrzędnych x
-                    int tempX = xValues[j];
-                    xValues[j] = xValues[j + 1];
-                    xValues[j + 1] = tempX;
+                colorLeft = new Color(
+                        Math.max(0, Math.min(255, rl)),
+                        Math.max(0, Math.min(255, gl)),
+                        Math.max(0, Math.min(255, bl))
+                );
 
-                    // Zamiana kolorów
-                    Color tempColor = colors[j];
-                    colors[j] = colors[j + 1];
-                    colors[j + 1] = tempColor;
-                }
-            }
-        }
+                colorRight = new Color(
+                        Math.max(0, Math.min(255, rr)),
+                        Math.max(0, Math.min(255, gr)),
+                        Math.max(0, Math.min(255, br))
+                );
 
-        // Przypisz posortowane wartości
-        int topX = xValues[0], midX = xValues[1], bottomX = xValues[2];
-        int topY = yValues[0], midY = yValues[1], bottomY = yValues[2];
-        Color topColor = colors[0], midColor = colors[1], bottomColor = colors[2];
-
-        // Obcinanie do granic obrazu
-        int minY = Math.max(0, topY);
-        int maxY = Math.min(image.getHeight() - 1, bottomY);
-
-        // Obliczenie współczynników nachylenia dla każdej krawędzi
-        double dx1 = topY == midY ? 0 : (double)(midX - topX) / (midY - topY);
-        double dx2 = topY == bottomY ? 0 : (double)(bottomX - topX) / (bottomY - topY);
-        double dx3 = midY == bottomY ? 0 : (double)(bottomX - midX) / (bottomY - midY);
-
-        // Współczynniki przyrostu dla składowych kolorów
-        double dr1 = topY == midY ? 0 : (double)(midColor.getRed() - topColor.getRed()) / (midY - topY);
-        double dg1 = topY == midY ? 0 : (double)(midColor.getGreen() - topColor.getGreen()) / (midY - topY);
-        double db1 = topY == midY ? 0 : (double)(midColor.getBlue() - topColor.getBlue()) / (midY - topY);
-
-        double dr2 = topY == bottomY ? 0 : (double)(bottomColor.getRed() - topColor.getRed()) / (bottomY - topY);
-        double dg2 = topY == bottomY ? 0 : (double)(bottomColor.getGreen() - topColor.getGreen()) / (bottomY - topY);
-        double db2 = topY == bottomY ? 0 : (double)(bottomColor.getBlue() - topColor.getBlue()) / (bottomY - topY);
-
-        double dr3 = midY == bottomY ? 0 : (double)(bottomColor.getRed() - midColor.getRed()) / (bottomY - midY);
-        double dg3 = midY == bottomY ? 0 : (double)(bottomColor.getGreen() - midColor.getGreen()) / (bottomY - midY);
-        double db3 = midY == bottomY ? 0 : (double)(bottomColor.getBlue() - midColor.getBlue()) / (bottomY - midY);
-
-        // Górna część trójkąta (pomiędzy topY i midY)
-        double xl = topX;  // Lewa granica aktywnej linii
-        double xr = topX;  // Prawa granica aktywnej linii
-
-        double rl = topColor.getRed();  // Kolor na lewej granicy
-        double gl = topColor.getGreen();
-        double bl = topColor.getBlue();
-
-        double rr = topColor.getRed();  // Kolor na prawej granicy
-        double gr = topColor.getGreen();
-        double br = topColor.getBlue();
-
-        // Rysowanie górnej części trójkąta
-        for (int y = minY; y < midY && y <= maxY; y++) {
-            if (y >= topY) {  // Zaczynamy dopiero od topY
-                int startX = (int)Math.ceil(Math.min(xl, xr));
-                int endX = (int)Math.floor(Math.max(xl, xr));
-
-                startX = Math.max(0, startX);
-                endX = Math.min(image.getWidth() - 1, endX);
-
-                // Inkrementalne cieniowanie dla każdego piksela w linii
-                if (startX <= endX) {
-                    double dx = endX == startX ? 0 : 1.0 / (endX - startX);
-                    double dr = (rr - rl) * dx;
-                    double dg = (gr - gl) * dx;
-                    double db = (br - bl) * dx;
-
-                    double r = rl;
-                    double g = gl;
-                    double b = bl;
-
-                    for (int x = startX; x <= endX; x++) {
-                        int rValue = Math.min(255, Math.max(0, (int)r));
-                        int gValue = Math.min(255, Math.max(0, (int)g));
-                        int bValue = Math.min(255, Math.max(0, (int)b));
-
-                        image.setRGB(x, y, new Color(rValue, gValue, bValue).getRGB());
-
-                        r += dr;
-                        g += dg;
-                        b += db;
-                    }
-                }
-
-                // Aktualizacja granic aktywnej linii i kolorów
-                xl += dx1;
-                xr += dx2;
-
-                rl += dr1;
-                gl += dg1;
-                bl += db1;
-
-                rr += dr2;
-                gr += dg2;
-                br += db2;
-            }
-        }
-
-        // Dolna część trójkąta (pomiędzy midY i bottomY)
-        // Resetujemy lewą granicę, jeśli używamy krawędzi od środkowego do dolnego wierzchołka
-        if (midY < bottomY) {
-            xl = midX;
-            rl = midColor.getRed();
-            gl = midColor.getGreen();
-            bl = midColor.getBlue();
-        }
-
-        // Rysowanie dolnej części trójkąta
-        for (int y = Math.max(minY, midY); y <= maxY; y++) {
-            int startX = (int)Math.ceil(Math.min(xl, xr));
-            int endX = (int)Math.floor(Math.max(xl, xr));
-
-            startX = Math.max(0, startX);
-            endX = Math.min(image.getWidth() - 1, endX);
-
-            // Inkrementalne cieniowanie dla każdego piksela w linii
-            if (startX <= endX) {
-                double dx = endX == startX ? 0 : 1.0 / (endX - startX);
-                double dr = (rr - rl) * dx;
-                double dg = (gr - gl) * dx;
-                double db = (br - bl) * dx;
-
-                double r = rl;
-                double g = gl;
-                double b = bl;
-
-                for (int x = startX; x <= endX; x++) {
-                    int rValue = Math.min(255, Math.max(0, (int)r));
-                    int gValue = Math.min(255, Math.max(0, (int)g));
-                    int bValue = Math.min(255, Math.max(0, (int)b));
-
-                    image.setRGB(x, y, new Color(rValue, gValue, bValue).getRGB());
-
-                    r += dr;
-                    g += dg;
-                    b += db;
+                if (xl <= xr) {
+                    xLeft = xl;
+                    xRight = xr;
+                } else {
+                    xLeft = xr;
+                    xRight = xl;
+                    Color temp = colorLeft;
+                    colorLeft = colorRight;
+                    colorRight = temp;
                 }
             }
 
-            // Aktualizacja granic aktywnej linii i kolorów
-            xl += dx3;
-            xr += dx2;
+            // Optymalizacja z użyciem podejścia inkrementalnego
+            float pixelCount = xRight - xLeft + 1;
+            if (pixelCount > 0) {
+                // Przyrosty kolorów
+                float rIncrement = (colorRight.getRed() - colorLeft.getRed()) / pixelCount;
+                float gIncrement = (colorRight.getGreen() - colorLeft.getGreen()) / pixelCount;
+                float bIncrement = (colorRight.getBlue() - colorLeft.getBlue()) / pixelCount;
 
-            rl += dr3;
-            gl += dg3;
-            bl += db3;
+                // Początkowe wartości kolorów
+                float r = colorLeft.getRed();
+                float g = colorLeft.getGreen();
+                float b = colorLeft.getBlue();
 
-            rr += dr2;
-            gr += dg2;
-            br += db2;
-        }
-    }
+                // Wypełnienie wiersza pikselami z interpolowanymi kolorami
+                for (int x = xLeft; x <= xRight; x++) {
+                    Color pixelColor = new Color(
+                            Math.max(0, Math.min(255, Math.round(r))),
+                            Math.max(0, Math.min(255, Math.round(g))),
+                            Math.max(0, Math.min(255, Math.round(b)))
+                    );
 
-    /**
-     * Zoptymalizowana wersja rysowania z cieniowaniem Gourauda na ekranie
-     * używająca algorytmu skanowania linii (scanline)
-     */
-    public void drawGouraudToScreenOptimized(Graphics graphics) {
-        if (graphics == null) return;
-
-        // Sortowanie wierzchołków względem współrzędnej y (od najmniejszej)
-        int[] xValues = {x1, x2, x3};
-        int[] yValues = {y1, y2, y3};
-        Color[] colors = {color1, color2, color3};
-
-        // Proste sortowanie bąbelkowe
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2 - i; j++) {
-                if (yValues[j] > yValues[j + 1]) {
-                    // Zamiana współrzędnych y
-                    int tempY = yValues[j];
-                    yValues[j] = yValues[j + 1];
-                    yValues[j + 1] = tempY;
-
-                    // Zamiana współrzędnych x
-                    int tempX = xValues[j];
-                    xValues[j] = xValues[j + 1];
-                    xValues[j + 1] = tempX;
-
-                    // Zamiana kolorów
-                    Color tempColor = colors[j];
-                    colors[j] = colors[j + 1];
-                    colors[j + 1] = tempColor;
-                }
-            }
-        }
-
-        // Przypisz posortowane wartości
-        int topX = xValues[0], midX = xValues[1], bottomX = xValues[2];
-        int topY = yValues[0], midY = yValues[1], bottomY = yValues[2];
-        Color topColor = colors[0], midColor = colors[1], bottomColor = colors[2];
-
-        // Obliczenie współczynników nachylenia dla każdej krawędzi
-        double dx1 = topY == midY ? 0 : (double)(midX - topX) / (midY - topY);
-        double dx2 = topY == bottomY ? 0 : (double)(bottomX - topX) / (bottomY - topY);
-        double dx3 = midY == bottomY ? 0 : (double)(bottomX - midX) / (bottomY - midY);
-
-        // Współczynniki przyrostu dla składowych kolorów
-        double dr1 = topY == midY ? 0 : (double)(midColor.getRed() - topColor.getRed()) / (midY - topY);
-        double dg1 = topY == midY ? 0 : (double)(midColor.getGreen() - topColor.getGreen()) / (midY - topY);
-        double db1 = topY == midY ? 0 : (double)(midColor.getBlue() - topColor.getBlue()) / (midY - topY);
-
-        double dr2 = topY == bottomY ? 0 : (double)(bottomColor.getRed() - topColor.getRed()) / (bottomY - topY);
-        double dg2 = topY == bottomY ? 0 : (double)(bottomColor.getGreen() - topColor.getGreen()) / (bottomY - topY);
-        double db2 = topY == bottomY ? 0 : (double)(bottomColor.getBlue() - topColor.getBlue()) / (bottomY - topY);
-
-        double dr3 = midY == bottomY ? 0 : (double)(bottomColor.getRed() - midColor.getRed()) / (bottomY - midY);
-        double dg3 = midY == bottomY ? 0 : (double)(midColor.getGreen() - midColor.getGreen()) / (bottomY - midY);
-        double db3 = midY == bottomY ? 0 : (double)(bottomColor.getBlue() - midColor.getBlue()) / (bottomY - midY);
-
-        // Górna część trójkąta (pomiędzy topY i midY)
-        double xl = topX;  // Lewa granica aktywnej linii
-        double xr = topX;  // Prawa granica aktywnej linii
-
-        double rl = topColor.getRed();  // Kolor na lewej granicy
-        double gl = topColor.getGreen();
-        double bl = topColor.getBlue();
-
-        double rr = topColor.getRed();  // Kolor na prawej granicy
-        double gr = topColor.getGreen();
-        double br = topColor.getBlue();
-
-        // Rysowanie górnej części trójkąta
-        for (int y = topY; y < midY; y++) {
-            int startX = (int)Math.ceil(Math.min(xl, xr));
-            int endX = (int)Math.floor(Math.max(xl, xr));
-
-            // Inkrementalne cieniowanie dla każdego piksela w linii
-            if (startX <= endX) {
-                double dx = endX == startX ? 0 : 1.0 / (endX - startX);
-                double dr = (rr - rl) * dx;
-                double dg = (gr - gl) * dx;
-                double db = (br - bl) * dx;
-
-                double r = rl;
-                double g = gl;
-                double b = bl;
-
-                for (int x = startX; x <= endX; x++) {
-                    int rValue = Math.min(255, Math.max(0, (int)r));
-                    int gValue = Math.min(255, Math.max(0, (int)g));
-                    int bValue = Math.min(255, Math.max(0, (int)b));
-
-                    graphics.setColor(new Color(rValue, gValue, bValue));
+                    graphics.setColor(pixelColor);
                     graphics.fillRect(x, y, 1, 1);
 
-                    r += dr;
-                    g += dg;
-                    b += db;
+                    // Inkrementacja kolorów
+                    r += rIncrement;
+                    g += gIncrement;
+                    b += bIncrement;
                 }
             }
-
-            // Aktualizacja granic aktywnej linii i kolorów
-            xl += dx1;
-            xr += dx2;
-
-            rl += dr1;
-            gl += dg1;
-            bl += db1;
-
-            rr += dr2;
-            gr += dg2;
-            br += db2;
-        }
-
-        // Dolna część trójkąta (pomiędzy midY i bottomY)
-        // Resetujemy lewą granicę, jeśli używamy krawędzi od środkowego do dolnego wierzchołka
-        if (midY < bottomY) {
-            xl = midX;
-            rl = midColor.getRed();
-            gl = midColor.getGreen();
-            bl = midColor.getBlue();
-        }
-
-        // Rysowanie dolnej części trójkąta
-        for (int y = midY; y <= bottomY; y++) {
-            int startX = (int)Math.ceil(Math.min(xl, xr));
-            int endX = (int)Math.floor(Math.max(xl, xr));
-
-            // Inkrementalne cieniowanie dla każdego piksela w linii
-            if (startX <= endX) {
-                double dx = endX == startX ? 0 : 1.0 / (endX - startX);
-                double dr = (rr - rl) * dx;
-                double dg = (gr - gl) * dx;
-                double db = (br - bl) * dx;
-
-                double r = rl;
-                double g = gl;
-                double b = bl;
-
-                for (int x = startX; x <= endX; x++) {
-                    int rValue = Math.min(255, Math.max(0, (int)r));
-                    int gValue = Math.min(255, Math.max(0, (int)g));
-                    int bValue = Math.min(255, Math.max(0, (int)b));
-
-                    graphics.setColor(new Color(rValue, gValue, bValue));
-                    graphics.fillRect(x, y, 1, 1);
-
-                    r += dr;
-                    g += dg;
-                    b += db;
-                }
-            }
-
-            // Aktualizacja granic aktywnej linii i kolorów
-            xl += dx3;
-            xr += dx2;
-
-            rl += dr3;
-            gl += dg3;
-            bl += db3;
-
-            rr += dr2;
-            gr += dg2;
-            br += db2;
         }
     }
 }
