@@ -1,21 +1,14 @@
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 
-public class GouraudShadingDemo extends JPanel {
-    private static final long serialVersionUID = 1L;
-
-    // Canvas dimensions
-    private static final int WIDTH = 1000;
-    private static final int HEIGHT = 800;
+public class GouraudShadingDemo {
+    // Image dimensions
+    private static final int WIDTH = 500;
+    private static final int HEIGHT = 400;
 
     // Individual triangle images
     private BufferedImage[] triangleImages;
@@ -23,21 +16,16 @@ public class GouraudShadingDemo extends JPanel {
     // Labels for each case
     private String[] labels = {
             "Case 1: Standard Triangle",
-            "Case 2: Flat-Top Triangle",
-            "Case 3: Flat-Bottom Triangle",
-            "Case 4: Horizontal Line Triangle",
-            "Case 5: Inverted Triangle",
-            "Case 6: Color Gradient Showcase"
+            "Case 2: Upside-Down Triangle",
+            "Case 3: Non-Parallel Triangle 1",
+            "Case 4: Non-Parallel Triangle 2",
+            "Case 5: Triangle with 2 Same Colors",
+            "Case 6: Triangle with 3 Same Colors"
     };
 
     public GouraudShadingDemo() {
-        setPreferredSize(new Dimension(WIDTH, HEIGHT));
-
-        // Create and draw all triangle cases
+        // Create and save all triangle cases
         createTriangleCases();
-
-        // Save the main canvas image
-        saveFullCanvas();
     }
 
     private void createTriangleCases() {
@@ -46,20 +34,25 @@ public class GouraudShadingDemo extends JPanel {
         // Create each triangle image
         for (int i = 0; i < triangleImages.length; i++) {
             triangleImages[i] = createTriangleImage(i);
+            saveTriangleImage(triangleImages[i], "triangle_case_" + (i+1) + ".png");
         }
     }
 
     private BufferedImage createTriangleImage(int caseNumber) {
-        BufferedImage image = new BufferedImage(WIDTH/2, HEIGHT/3, BufferedImage.TYPE_INT_ARGB);
-        Graphics g = image.getGraphics();
+        BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, image.getWidth(), image.getHeight());
+
+        // Draw the label
+        g.setColor(Color.BLACK);
+        g.drawString(labels[caseNumber], 10, 20);
         g.dispose();
 
         Triangle2D triangle = null;
 
         switch (caseNumber) {
-            case 0: // Standard Triangle (top-to-bottom)
+            case 0: // Standard Triangle (top-to-bottom) - Keep original case 1
                 triangle = new Triangle2D(
                         new int[] {image.getWidth()/2, image.getWidth()/4, 3*image.getWidth()/4},
                         new int[] {30, image.getHeight()-30, image.getHeight()-30},
@@ -67,47 +60,43 @@ public class GouraudShadingDemo extends JPanel {
                 );
                 break;
 
-            case 1: // Flat-Top Triangle
+            case 1: // Upside-Down Triangle
                 triangle = new Triangle2D(
-                        new int[] {image.getWidth()/4, 3*image.getWidth()/4, image.getWidth()/2},
-                        new int[] {30, 30, image.getHeight()-30},
+                        new int[] {image.getWidth()/2, image.getWidth()/4, 3*image.getWidth()/4},
+                        new int[] {image.getHeight()-30, 30, 30},
                         new Color[] {Color.MAGENTA, Color.YELLOW, Color.CYAN}
                 );
                 break;
 
-            case 2: // Flat-Bottom Triangle
+            case 2: // Non-Parallel Triangle 1 (no side parallel to screen)
                 triangle = new Triangle2D(
-                        new int[] {image.getWidth()/2, image.getWidth()/4, 3*image.getWidth()/4},
-                        new int[] {30, image.getHeight()-30, image.getHeight()-30},
+                        new int[] {image.getWidth()/3, image.getWidth()/4, 3*image.getWidth()/5},
+                        new int[] {image.getHeight()/4, 3*image.getHeight()/4, 2*image.getHeight()/3},
                         new Color[] {Color.ORANGE, Color.PINK, new Color(100, 200, 100)}
                 );
                 break;
 
-            case 3: // Horizontal Line Triangle (Degenerated)
+            case 3: // Non-Parallel Triangle 2 (another orientation with no parallel sides)
                 triangle = new Triangle2D(
-                        new int[] {image.getWidth()/4, image.getWidth()/2, 3*image.getWidth()/4},
-                        new int[] {image.getHeight()/2, image.getHeight()/2, image.getHeight()/2},
+                        new int[] {image.getWidth()/4, 2*image.getWidth()/3, 3*image.getWidth()/4},
+                        new int[] {image.getHeight()/3, image.getHeight()/4, 3*image.getHeight()/4},
                         new Color[] {Color.RED, Color.GREEN, Color.BLUE}
                 );
                 break;
 
-            case 4: // Inverted Triangle
+            case 4: // Triangle with 2 same colors
                 triangle = new Triangle2D(
                         new int[] {image.getWidth()/2, image.getWidth()/4, 3*image.getWidth()/4},
-                        new int[] {image.getHeight()-30, 30, 30},
-                        new Color[] {new Color(50, 0, 100), new Color(200, 100, 0), new Color(0, 150, 150)}
+                        new int[] {30, image.getHeight()-30, image.getHeight()-30},
+                        new Color[] {new Color(50, 0, 100), new Color(50, 0, 100), new Color(0, 150, 150)}
                 );
                 break;
 
-            case 5: // Color Gradient Showcase
+            case 5: // Triangle with 3 same colors
                 triangle = new Triangle2D(
-                        new int[] {image.getWidth()/2, 30, image.getWidth()-30},
-                        new int[] {30, image.getHeight()-30, image.getHeight()/2},
-                        new Color[] {
-                                new Color(255, 0, 0),    // Pure Red
-                                new Color(0, 255, 0),    // Pure Green
-                                new Color(0, 0, 255)     // Pure Blue
-                        }
+                        new int[] {image.getWidth()/2, image.getWidth()/4, 3*image.getWidth()/4},
+                        new int[] {30, image.getHeight()-30, image.getHeight()-30},
+                        new Color[] {new Color(255, 0, 0), new Color(255, 0, 0), new Color(255, 0, 0)}
                 );
                 break;
         }
@@ -123,8 +112,6 @@ public class GouraudShadingDemo extends JPanel {
     }
 
     private void drawTriangleOutline(BufferedImage image, Triangle2D triangle) {
-        // Need to access the x, y coordinates from Triangle2D
-        // Since these are private, we'll use reflection to access them
         try {
             java.lang.reflect.Field xField = Triangle2D.class.getDeclaredField("x");
             java.lang.reflect.Field yField = Triangle2D.class.getDeclaredField("y");
@@ -146,90 +133,17 @@ public class GouraudShadingDemo extends JPanel {
         }
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        // Draw white background
-        g.setColor(Color.WHITE);
-        g.fillRect(0, 0, getWidth(), getHeight());
-
-        // Draw each triangle image in a grid layout
-        for (int i = 0; i < triangleImages.length; i++) {
-            int row = i / 2;
-            int col = i % 2;
-
-            int x = col * (WIDTH/2);
-            int y = row * (HEIGHT/3);
-
-            g.drawImage(triangleImages[i], x, y, null);
-
-            // Draw label
-            g.setColor(Color.BLACK);
-            g.drawString(labels[i], x + 10, y + 20);
-        }
-    }
-
-    private void saveFullCanvas() {
-        BufferedImage fullCanvas = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = fullCanvas.createGraphics();
-
-        // Draw white background
-        g.setColor(Color.WHITE);
-        g.fillRect(0, 0, WIDTH, HEIGHT);
-
-        // Draw each triangle image in a grid layout
-        for (int i = 0; i < triangleImages.length; i++) {
-            int row = i / 2;
-            int col = i % 2;
-
-            int x = col * (WIDTH/2);
-            int y = row * (HEIGHT/3);
-
-            g.drawImage(triangleImages[i], x, y, null);
-
-            // Draw label
-            g.setColor(Color.BLACK);
-            g.drawString(labels[i], x + 10, y + 20);
-        }
-
-        g.dispose();
-
-        // Save the complete image
+    private void saveTriangleImage(BufferedImage image, String filename) {
         try {
-            ImageIO.write(fullCanvas, "PNG", new File("triangle_shading_cases.png"));
-            System.out.println("Saved all triangle cases to triangle_shading_cases.png");
-
-            // Also save individual triangle images
-            for (int i = 0; i < triangleImages.length; i++) {
-                ImageIO.write(triangleImages[i], "PNG", new File("triangle_case_" + (i+1) + ".png"));
-            }
+            ImageIO.write(image, "PNG", new File(filename));
+            System.out.println("Saved " + filename);
         } catch (IOException e) {
-            System.err.println("Error saving image: " + e.getMessage());
-        }
-    }
-
-    // Save each triangle image separately
-    private void saveIndividualTriangleImages() {
-        for (int i = 0; i < triangleImages.length; i++) {
-            try {
-                ImageIO.write(triangleImages[i], "PNG", new File("triangle_case_" + (i+1) + ".png"));
-                System.out.println("Saved triangle case " + (i+1) + " to triangle_case_" + (i+1) + ".png");
-            } catch (IOException e) {
-                System.err.println("Error saving image for case " + (i+1) + ": " + e.getMessage());
-            }
+            System.err.println("Error saving image " + filename + ": " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Gouraud Shading Triangle Demo");
-            GouraudShadingDemo panel = new GouraudShadingDemo();
-            frame.add(panel);
-            frame.pack();
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-        });
+        new GouraudShadingDemo();
+        System.out.println("All triangle images saved successfully!");
     }
 }
