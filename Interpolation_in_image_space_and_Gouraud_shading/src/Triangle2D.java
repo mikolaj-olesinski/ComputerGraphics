@@ -8,6 +8,7 @@ public class Triangle2D {
     private int[] y;
     private Color[] colors;
 
+
     public Triangle2D(int[] x, int[] y, Color[] colors) {
         if (x.length != 3 || y.length != 3 || colors.length != 3) {
             throw new IllegalArgumentException("Trójkąt musi mieć dokładnie 3 wierzchołki!");
@@ -16,6 +17,14 @@ public class Triangle2D {
         this.y = y.clone();
         this.colors = colors.clone();
         sortVerticesByY();
+    }
+
+    public int[] getX() {
+        return x.clone();
+    }
+
+    public int[] getY() {
+        return y.clone();
     }
 
     private void sortVerticesByY() {
