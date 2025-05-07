@@ -7,7 +7,7 @@ public class Triangle2D {
     private int[] x;
     private int[] y;
     private Color[] colors;
-
+    private int pixelsDrawn; // Dodane pole do zliczania narysowanych pikseli
 
     public Triangle2D(int[] x, int[] y, Color[] colors) {
         if (x.length != 3 || y.length != 3 || colors.length != 3) {
@@ -16,6 +16,7 @@ public class Triangle2D {
         this.x = x.clone();
         this.y = y.clone();
         this.colors = colors.clone();
+        this.pixelsDrawn = 0;
         sortVerticesByY();
     }
 
@@ -25,6 +26,16 @@ public class Triangle2D {
 
     public int[] getY() {
         return y.clone();
+    }
+
+    // Nowa metoda zwracająca liczbę narysowanych pikseli
+    public int getPixelsDrawn() {
+        return pixelsDrawn;
+    }
+
+    // Metoda do resetowania licznika pikseli
+    public void resetPixelCount() {
+        this.pixelsDrawn = 0;
     }
 
     private void sortVerticesByY() {
@@ -42,10 +53,11 @@ public class Triangle2D {
         colors = newC;
     }
 
-    public void gouraudShadeToImage(BufferedImage image) {
+    public int gouraudShadeToImage(BufferedImage image) {
         if (image == null) {
             throw new IllegalArgumentException("Obraz nie może być null!");
         }
+        pixelsDrawn = 0; // Reset licznika przed rozpoczęciem rysowania
         int width = image.getWidth();
         int height = image.getHeight();
 
@@ -84,13 +96,16 @@ public class Triangle2D {
                     width, height
             );
         }
+
+        return pixelsDrawn; // Zwróć liczbę narysowanych pikseli
     }
 
     // Nowa metoda do rysowania trójkąta bezpośrednio przy użyciu Graphics
-    public void gouraudShadeToGraphics(Graphics g, int width, int height) {
+    public int gouraudShadeToGraphics(Graphics g, int width, int height) {
         if (g == null) {
             throw new IllegalArgumentException("Graphics nie może być null!");
         }
+        pixelsDrawn = 0; // Reset licznika przed rozpoczęciem rysowania
 
         if (y[0] != y[1] && y[1] != y[2]) {
             float t = (float) (y[1] - y[0]) / (y[2] - y[0]);
@@ -127,6 +142,8 @@ public class Triangle2D {
                     width, height
             );
         }
+
+        return pixelsDrawn;
     }
 
     private void fillTriangleWithEdges(BufferedImage image, Edge leftEdge, Edge rightEdge, int width, int height) {
@@ -247,6 +264,7 @@ public class Triangle2D {
 
             // Set the pixel color
             image.setRGB(x, y, pixelColor.getRGB());
+            pixelsDrawn++;
         }
     }
 
@@ -264,6 +282,7 @@ public class Triangle2D {
             // Ustawienie koloru i narysowanie piksela
             g.setColor(interpolated_color);
             g.fillRect(x, y, 1, 1);
+            pixelsDrawn++;
         }
     }
 
