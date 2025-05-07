@@ -20,21 +20,38 @@ public class GouraudShadingDemo {
             "Case 3: Non-Parallel Triangle 1",
             "Case 4: Non-Parallel Triangle 2",
             "Case 5: Triangle with 2 Same Colors",
-            "Case 6: Triangle with 3 Same Colors"
+            "Case 6: Triangle with 3 Same Colors",
+            "Case 7: Long Thin Triangle",
+            "Case 8: Right-Angled Triangle",
+            "Case 9: Obtuse Triangle"
     };
 
     public GouraudShadingDemo() {
+        // Create output directory if it doesn't exist
+        createOutputDirectory();
+
         // Create and save all triangle cases
         createTriangleCases();
     }
 
+    private void createOutputDirectory() {
+        File outputDir = new File("triangle_images");
+        if (!outputDir.exists()) {
+            if (outputDir.mkdir()) {
+                System.out.println("Created output directory: triangle_images");
+            } else {
+                System.err.println("Failed to create output directory!");
+            }
+        }
+    }
+
     private void createTriangleCases() {
-        triangleImages = new BufferedImage[6]; // 6 different cases
+        triangleImages = new BufferedImage[9]; // 9 different cases (6 original + 3 new)
 
         // Create each triangle image
         for (int i = 0; i < triangleImages.length; i++) {
             triangleImages[i] = createTriangleImage(i);
-            saveTriangleImage(triangleImages[i], "triangle_case_" + (i+1) + ".png");
+            saveTriangleImage(triangleImages[i], "triangle_images/triangle_case_" + (i+1) + ".png");
         }
     }
 
@@ -52,7 +69,7 @@ public class GouraudShadingDemo {
         Triangle2D triangle = null;
 
         switch (caseNumber) {
-            case 0: // Standard Triangle (top-to-bottom) - Keep original case 1
+            case 0: // Standard Triangle (top-to-bottom)
                 triangle = new Triangle2D(
                         new int[] {image.getWidth()/2, image.getWidth()/4, 3*image.getWidth()/4},
                         new int[] {30, image.getHeight()-30, image.getHeight()-30},
@@ -99,38 +116,39 @@ public class GouraudShadingDemo {
                         new Color[] {new Color(255, 0, 0), new Color(255, 0, 0), new Color(255, 0, 0)}
                 );
                 break;
+
+            case 6: // NEW: Long Thin Triangle (very stretched)
+                triangle = new Triangle2D(
+                        new int[] {50, 450, 250},
+                        new int[] {200, 200, 180},
+                        new Color[] {Color.BLUE, Color.RED, new Color(255, 165, 0)} // Orange
+                );
+                break;
+
+            case 7: // NEW: Right-Angled Triangle
+                triangle = new Triangle2D(
+                        new int[] {100, 100, 400},
+                        new int[] {100, 300, 300},
+                        new Color[] {Color.CYAN, Color.MAGENTA, Color.YELLOW}
+                );
+                break;
+
+            case 8: // NEW: Obtuse Triangle
+                triangle = new Triangle2D(
+                        new int[] {150, 350, 400},
+                        new int[] {150, 150, 300},
+                        new Color[] {new Color(128, 0, 128), new Color(0, 128, 0), new Color(128, 128, 0)} // Purple, Green, Olive
+                );
+                break;
         }
 
         if (triangle != null) {
             triangle.gouraudShadeToImage(image);
 
-            // Draw border around the triangle to show its outline
-            drawTriangleOutline(image, triangle);
+            // No longer drawing triangle outline
         }
 
         return image;
-    }
-
-    private void drawTriangleOutline(BufferedImage image, Triangle2D triangle) {
-        try {
-            java.lang.reflect.Field xField = Triangle2D.class.getDeclaredField("x");
-            java.lang.reflect.Field yField = Triangle2D.class.getDeclaredField("y");
-
-            xField.setAccessible(true);
-            yField.setAccessible(true);
-
-            int[] x = (int[]) xField.get(triangle);
-            int[] y = (int[]) yField.get(triangle);
-
-            Graphics2D g2d = image.createGraphics();
-            g2d.setColor(Color.BLACK);
-            g2d.drawLine(x[0], y[0], x[1], y[1]);
-            g2d.drawLine(x[1], y[1], x[2], y[2]);
-            g2d.drawLine(x[2], y[2], x[0], y[0]);
-            g2d.dispose();
-        } catch (Exception e) {
-            System.err.println("Could not draw triangle outline: " + e.getMessage());
-        }
     }
 
     private void saveTriangleImage(BufferedImage image, String filename) {

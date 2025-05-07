@@ -128,6 +128,13 @@ public class Triangle2D {
 
     private void fillTriangle(BufferedImage image, Graphics g, Edge leftEdge, Edge rightEdge,
                               int width, int height, RenderMode mode) {
+
+        if (leftEdge.x2 > rightEdge.x2 || leftEdge.x1 > rightEdge.x1) {
+            Edge tmpEdge = leftEdge;
+            leftEdge = rightEdge;
+            rightEdge = tmpEdge;
+        }
+
         EdgeInterpolator l = new EdgeInterpolator(leftEdge);
         EdgeInterpolator r = new EdgeInterpolator(rightEdge);
 
@@ -141,15 +148,7 @@ public class Triangle2D {
             Color cLeft  = l.getColor();
             Color cRight = r.getColor();
 
-            // Sprawdzenie czy należy zamienić punkty miejscami
-            if (xLeft > xRight) {
-                int tmpX = xLeft;
-                xLeft = xRight;
-                xRight = tmpX;
-                Color tmpC = cLeft;
-                cLeft = cRight;
-                cRight = tmpC;
-            }
+            // już nie musimy się martwić o swap w środku
             xLeft  = Math.max(0, Math.min(width - 1, xLeft));
             xRight = Math.max(0, Math.min(width - 1, xRight));
 
@@ -159,6 +158,7 @@ public class Triangle2D {
             r.step();
         }
     }
+
 
     private static class EdgeInterpolator {
         private float x, dx;
@@ -200,25 +200,44 @@ public class Triangle2D {
     }
 
     // Zunifikowana metoda rysowania linii skanującej
-    private void drawScanline(BufferedImage image, Graphics g, int y, int xLeft, int xRight,
-                              Color colorLeft, Color colorRight, RenderMode mode) {
+    private void drawScanline(BufferedImage image, Graphics g,
+                              int y, int xLeft, int xRight,
+                              Color colorLeft, Color colorRight,
+                              RenderMode mode) {
         int pixelCount = xRight - xLeft + 1;
         if (pixelCount <= 0) return;
 
-        for (int x = xLeft; x <= xRight; x++) {
-            // Calculate interpolation factor t (0.0 at xLeft, 1.0 at xRight)
-            float t = (pixelCount > 1) ? (x - xLeft) / (float)(pixelCount - 1) : 0;
-            Color pixelColor = interpolateColor(colorLeft, colorRight, t);
+        float invW = (pixelCount > 1)
+                ? 1.0f / (pixelCount - 1)
+                : 0f;
 
-            // Renderowanie w zależności od wybranego trybu
+        float rCurr = colorLeft.getRed();
+        float gCurr = colorLeft.getGreen();
+        float bCurr = colorLeft.getBlue();
+
+        float rStep = (colorRight.getRed()   - rCurr) * invW;
+        float gStep = (colorRight.getGreen() - gCurr) * invW;
+        float bStep = (colorRight.getBlue()  - bCurr) * invW;
+
+        for (int x = xLeft; x <= xRight; x++) {
+            Color interpolatedColor = new Color(
+                    clamp(Math.round(rCurr)),
+                    clamp(Math.round(gCurr)),
+                    clamp(Math.round(bCurr))
+            );
+
             if (mode == RenderMode.BUFFERED_IMAGE) {
-                image.setRGB(x, y, pixelColor.getRGB());
-            } else if (mode == RenderMode.GRAPHICS) {
-                g.setColor(pixelColor);
+                image.setRGB(x, y, interpolatedColor.getRGB());
+            } else {
+                g.setColor(interpolatedColor);
                 g.fillRect(x, y, 1, 1);
             }
 
             pixelsDrawn++;
+
+            rCurr += rStep;
+            gCurr += gStep;
+            bCurr += bStep;
         }
     }
 
