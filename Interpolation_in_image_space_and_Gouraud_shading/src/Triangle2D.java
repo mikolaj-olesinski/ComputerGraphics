@@ -7,7 +7,16 @@ public class Triangle2D {
     private int[] x;
     private int[] y;
     private Color[] colors;
-    private int pixelsDrawn; // Dodane pole do zliczania narysowanych pikseli
+    private int pixelsDrawn;
+
+    // Enum definiujący tryby rysowania
+    public enum RenderMode {
+        BUFFERED_IMAGE,
+        GRAPHICS
+    }
+
+    // Domyślny tryb rysowania
+    private RenderMode renderMode = RenderMode.BUFFERED_IMAGE;
 
     public Triangle2D(int[] x, int[] y, Color[] colors) {
         if (x.length != 3 || y.length != 3 || colors.length != 3) {
@@ -28,14 +37,20 @@ public class Triangle2D {
         return y.clone();
     }
 
-    // Nowa metoda zwracająca liczbę narysowanych pikseli
     public int getPixelsDrawn() {
         return pixelsDrawn;
     }
 
-    // Metoda do resetowania licznika pikseli
     public void resetPixelCount() {
         this.pixelsDrawn = 0;
+    }
+
+    public void setRenderMode(RenderMode mode) {
+        this.renderMode = mode;
+    }
+
+    public RenderMode getRenderMode() {
+        return renderMode;
     }
 
     private void sortVerticesByY() {
@@ -53,58 +68,23 @@ public class Triangle2D {
         colors = newC;
     }
 
+    // Metoda do rysowania w trybie BufferedImage - pozostawiona dla kompatybilności wstecznej
     public int gouraudShadeToImage(BufferedImage image) {
-        if (image == null) {
-            throw new IllegalArgumentException("Obraz nie może być null!");
-        }
-        pixelsDrawn = 0; // Reset licznika przed rozpoczęciem rysowania
-        int width = image.getWidth();
-        int height = image.getHeight();
-
-        if (y[0] != y[1] && y[1] != y[2]) {
-            float t = (float) (y[1] - y[0]) / (y[2] - y[0]);
-            int x4 = Math.round(x[0] + t * (x[2] - x[0]));
-            Color color4 = interpolateColor(colors[0], colors[2], t);
-
-            // Górny trójkąt (flat-bottom)
-            fillTriangleWithEdges(
-                    image,
-                    new Edge(x[0], y[0], colors[0], x[1], y[1], colors[1]),
-                    new Edge(x[0], y[0], colors[0], x4,  y[1], color4),
-                    width, height
-            );
-
-            // Dolny trójkąt (flat-top)
-            fillTriangleWithEdges(
-                    image,
-                    new Edge(x[1], y[1], colors[1], x[2], y[2], colors[2]),
-                    new Edge(x4,  y[1], color4,   x[2], y[2], colors[2]),
-                    width, height
-            );
-        } else if (y[0] == y[1]) {
-            fillTriangleWithEdges(
-                    image,
-                    new Edge(x[0], y[0], colors[0], x[2], y[2], colors[2]),
-                    new Edge(x[1], y[1], colors[1], x[2], y[2], colors[2]),
-                    width, height
-            );
-        } else {
-            fillTriangleWithEdges(
-                    image,
-                    new Edge(x[0], y[0], colors[0], x[1], y[1], colors[1]),
-                    new Edge(x[0], y[0], colors[0], x[2], y[2], colors[2]),
-                    width, height
-            );
-        }
-
-        return pixelsDrawn; // Zwróć liczbę narysowanych pikseli
+        return renderTriangle(image, null, image.getWidth(), image.getHeight(), RenderMode.BUFFERED_IMAGE);
     }
 
-    // Nowa metoda do rysowania trójkąta bezpośrednio przy użyciu Graphics
+    // Metoda do rysowania w trybie Graphics - pozostawiona dla kompatybilności wstecznej
     public int gouraudShadeToGraphics(Graphics g, int width, int height) {
-        if (g == null) {
-            throw new IllegalArgumentException("Graphics nie może być null!");
-        }
+        return renderTriangle(null, g, width, height, RenderMode.GRAPHICS);
+    }
+
+    // Nowa zunifikowana metoda rysowania
+    public int renderTriangle(BufferedImage image, Graphics g, int width, int height) {
+        return renderTriangle(image, g, width, height, this.renderMode);
+    }
+
+    // Główna metoda rysowania używająca aktualnego trybu
+    private int renderTriangle(BufferedImage image, Graphics g, int width, int height, RenderMode mode) {
         pixelsDrawn = 0; // Reset licznika przed rozpoczęciem rysowania
 
         if (y[0] != y[1] && y[1] != y[2]) {
@@ -113,40 +93,41 @@ public class Triangle2D {
             Color color4 = interpolateColor(colors[0], colors[2], t);
 
             // Górny trójkąt (flat-bottom)
-            fillTriangleWithGraphics(
-                    g,
+            fillTriangle(
+                    image, g,
                     new Edge(x[0], y[0], colors[0], x[1], y[1], colors[1]),
                     new Edge(x[0], y[0], colors[0], x4,  y[1], color4),
-                    width, height
+                    width, height, mode
             );
 
             // Dolny trójkąt (flat-top)
-            fillTriangleWithGraphics(
-                    g,
+            fillTriangle(
+                    image, g,
                     new Edge(x[1], y[1], colors[1], x[2], y[2], colors[2]),
                     new Edge(x4,  y[1], color4,   x[2], y[2], colors[2]),
-                    width, height
+                    width, height, mode
             );
         } else if (y[0] == y[1]) {
-            fillTriangleWithGraphics(
-                    g,
+            fillTriangle(
+                    image, g,
                     new Edge(x[0], y[0], colors[0], x[2], y[2], colors[2]),
                     new Edge(x[1], y[1], colors[1], x[2], y[2], colors[2]),
-                    width, height
+                    width, height, mode
             );
         } else {
-            fillTriangleWithGraphics(
-                    g,
+            fillTriangle(
+                    image, g,
                     new Edge(x[0], y[0], colors[0], x[1], y[1], colors[1]),
                     new Edge(x[0], y[0], colors[0], x[2], y[2], colors[2]),
-                    width, height
+                    width, height, mode
             );
         }
 
         return pixelsDrawn;
     }
 
-    private void fillTriangleWithEdges(BufferedImage image, Edge leftEdge, Edge rightEdge, int width, int height) {
+    private void fillTriangle(BufferedImage image, Graphics g, Edge leftEdge, Edge rightEdge,
+                              int width, int height, RenderMode mode) {
         EdgeInterpolator l = new EdgeInterpolator(leftEdge);
         EdgeInterpolator r = new EdgeInterpolator(rightEdge);
 
@@ -172,41 +153,7 @@ public class Triangle2D {
             xLeft  = Math.max(0, Math.min(width - 1, xLeft));
             xRight = Math.max(0, Math.min(width - 1, xRight));
 
-            drawScanline(image, y, xLeft, xRight, cLeft, cRight);
-
-            l.step();
-            r.step();
-        }
-    }
-
-    // Nowa metoda do rysowania trójkąta przy użyciu Graphics
-    private void fillTriangleWithGraphics(Graphics g, Edge leftEdge, Edge rightEdge, int width, int height) {
-        EdgeInterpolator l = new EdgeInterpolator(leftEdge);
-        EdgeInterpolator r = new EdgeInterpolator(rightEdge);
-
-        int yStart = Math.max(0, Math.min(leftEdge.y1, rightEdge.y1));
-        int yEnd   = Math.min(height - 1, Math.max(leftEdge.y2, rightEdge.y2));
-
-        for (int y = yStart; y <= yEnd; y++) {
-            int xLeft  = l.getX();
-            int xRight = r.getX();
-
-            Color cLeft  = l.getColor();
-            Color cRight = r.getColor();
-
-            // Sprawdzenie czy należy zamienić punkty miejscami
-            if (xLeft > xRight) {
-                int tmpX = xLeft;
-                xLeft = xRight;
-                xRight = tmpX;
-                Color tmpC = cLeft;
-                cLeft = cRight;
-                cRight = tmpC;
-            }
-            xLeft  = Math.max(0, Math.min(width - 1, xLeft));
-            xRight = Math.max(0, Math.min(width - 1, xRight));
-
-            drawScanlineToGraphics(g, y, xLeft, xRight, cLeft, cRight);
+            drawScanline(image, g, y, xLeft, xRight, cLeft, cRight, mode);
 
             l.step();
             r.step();
@@ -252,36 +199,25 @@ public class Triangle2D {
         }
     }
 
-    private void drawScanline(BufferedImage image, int y, int xLeft, int xRight, Color colorLeft, Color colorRight) {
+    // Zunifikowana metoda rysowania linii skanującej
+    private void drawScanline(BufferedImage image, Graphics g, int y, int xLeft, int xRight,
+                              Color colorLeft, Color colorRight, RenderMode mode) {
         int pixelCount = xRight - xLeft + 1;
         if (pixelCount <= 0) return;
 
         for (int x = xLeft; x <= xRight; x++) {
             // Calculate interpolation factor t (0.0 at xLeft, 1.0 at xRight)
             float t = (pixelCount > 1) ? (x - xLeft) / (float)(pixelCount - 1) : 0;
-
             Color pixelColor = interpolateColor(colorLeft, colorRight, t);
 
-            // Set the pixel color
-            image.setRGB(x, y, pixelColor.getRGB());
-            pixelsDrawn++;
-        }
-    }
+            // Renderowanie w zależności od wybranego trybu
+            if (mode == RenderMode.BUFFERED_IMAGE) {
+                image.setRGB(x, y, pixelColor.getRGB());
+            } else if (mode == RenderMode.GRAPHICS) {
+                g.setColor(pixelColor);
+                g.fillRect(x, y, 1, 1);
+            }
 
-    // Nowa metoda do rysowania linii skanującej przy użyciu Graphics
-    private void drawScanlineToGraphics(Graphics g, int y, int xLeft, int xRight, Color colorLeft, Color colorRight) {
-        int pixelCount = xRight - xLeft + 1;
-        if (pixelCount <= 0) return;
-
-        for (int x = xLeft; x <= xRight; x++) {
-            // Calculate interpolation factor t (0.0 at xLeft, 1.0 at xRight)
-            float t = (pixelCount > 1) ? (x - xLeft) / (float)(pixelCount - 1) : 0;
-
-            Color interpolated_color = interpolateColor(colorLeft, colorRight, t);
-
-            // Ustawienie koloru i narysowanie piksela
-            g.setColor(interpolated_color);
-            g.fillRect(x, y, 1, 1);
             pixelsDrawn++;
         }
     }
