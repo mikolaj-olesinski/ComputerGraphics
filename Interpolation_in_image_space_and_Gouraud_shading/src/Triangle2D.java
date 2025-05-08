@@ -8,20 +8,29 @@ public class Triangle2D {
     private int[] y;
     private Color[] colors;
     private int pixelsDrawn;
-
-    // Enum definiujący tryby rysowania
+    
     public enum RenderMode {
         BUFFERED_IMAGE,
         GRAPHICS
     }
-
-    // Domyślny tryb rysowania
+    
     private RenderMode renderMode = RenderMode.BUFFERED_IMAGE;
 
     public Triangle2D(int[] x, int[] y, Color[] colors) {
         if (x.length != 3 || y.length != 3 || colors.length != 3) {
             throw new IllegalArgumentException("Trójkąt musi mieć dokładnie 3 wierzchołki!");
         }
+        else if ((x[0] == x[1] && y[0] == y[1]) ||
+                (x[0] == x[2] && y[0] == y[2]) ||
+                (x[1] == x[2] && y[1] == y[2])) {
+            throw new IllegalArgumentException("Dwa wierzchołki nie mogą się pokrywać!");
+        }
+        //(x[0] - x[1]) / (y[0] - y[1]) == (x[0] - x[2]) / (y[0] - y[2])
+        else if ((x[0] - x[1]) * (y[0] - y[2]) == (x[0] - x[2]) * (y[0] - y[1])) {
+            throw new IllegalArgumentException("Wierzchołki są współliniowe!");
+        }
+
+
         this.x = x.clone();
         this.y = y.clone();
         this.colors = colors.clone();
@@ -67,25 +76,21 @@ public class Triangle2D {
         y = newY;
         colors = newC;
     }
-
-    // Metoda do rysowania w trybie BufferedImage - pozostawiona dla kompatybilności wstecznej
+    
     public int gouraudShadeToImage(BufferedImage image) {
         return renderTriangle(image, null, image.getWidth(), image.getHeight(), RenderMode.BUFFERED_IMAGE);
     }
-
-    // Metoda do rysowania w trybie Graphics - pozostawiona dla kompatybilności wstecznej
+    
     public int gouraudShadeToGraphics(Graphics g, int width, int height) {
         return renderTriangle(null, g, width, height, RenderMode.GRAPHICS);
     }
-
-    // Nowa zunifikowana metoda rysowania
+    
     public int renderTriangle(BufferedImage image, Graphics g, int width, int height) {
         return renderTriangle(image, g, width, height, this.renderMode);
     }
-
-    // Główna metoda rysowania używająca aktualnego trybu
+    
     private int renderTriangle(BufferedImage image, Graphics g, int width, int height, RenderMode mode) {
-        pixelsDrawn = 0; // Reset licznika przed rozpoczęciem rysowania
+        pixelsDrawn = 0; 
 
         if (y[0] != y[1] && y[1] != y[2]) {
             float t = (float) (y[1] - y[0]) / (y[2] - y[0]);
@@ -147,8 +152,7 @@ public class Triangle2D {
 
             Color cLeft  = l.getColor();
             Color cRight = r.getColor();
-
-            // już nie musimy się martwić o swap w środku
+            
             xLeft  = Math.max(0, Math.min(width - 1, xLeft));
             xRight = Math.max(0, Math.min(width - 1, xRight));
 
@@ -199,7 +203,6 @@ public class Triangle2D {
         }
     }
 
-    // Zunifikowana metoda rysowania linii skanującej
     private void drawScanline(BufferedImage image, Graphics g,
                               int y, int xLeft, int xRight,
                               Color colorLeft, Color colorRight,
@@ -207,6 +210,7 @@ public class Triangle2D {
         int pixelCount = xRight - xLeft + 1;
         if (pixelCount <= 0) return;
 
+        //invH = 1.0f / (y2 - y1);
         float invW = (pixelCount > 1)
                 ? 1.0f / (pixelCount - 1)
                 : 0f;

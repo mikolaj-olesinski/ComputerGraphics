@@ -52,7 +52,6 @@ public class TrianglePerformanceTest extends JPanel {
         String msg;
 
         if (bufferedMode) {
-            // Buffered image mode test
             BufferedImage img = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
             t0 = System.nanoTime();
             pixels = 0;
@@ -71,7 +70,6 @@ public class TrianglePerformanceTest extends JPanel {
 
             msg = String.format("Buffered: %.1f tri/s, %.1f pix/s", triPerSec, pixPerSec);
         } else {
-            // Graphics mode test
             Graphics g = getGraphics();
             t0 = System.nanoTime();
             pixels = 0;
@@ -89,7 +87,6 @@ public class TrianglePerformanceTest extends JPanel {
             msg = String.format("Graphics: %.1f tri/s, %.1f pix/s", triPerSec, pixPerSec);
         }
 
-        // show results
         System.out.println(msg);
         JOptionPane.showMessageDialog(this, msg, "Performance Results", JOptionPane.INFORMATION_MESSAGE);
 
