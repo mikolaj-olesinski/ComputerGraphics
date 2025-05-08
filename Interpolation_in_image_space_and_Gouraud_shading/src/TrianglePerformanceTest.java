@@ -68,7 +68,7 @@ public class TrianglePerformanceTest extends JPanel {
             testImage = img; // store for display
             repaint();
 
-            msg = String.format("Buffered: %.1f tri/s, %.1f pix/s", triPerSec, pixPerSec);
+            msg = String.format("Buffered: %,.1f tri/s, %,.1f pix/s", triPerSec, pixPerSec);
         } else {
             Graphics g = getGraphics();
             t0 = System.nanoTime();
@@ -84,7 +84,7 @@ public class TrianglePerformanceTest extends JPanel {
             triPerSec = triangles.size() / secs;
             pixPerSec = pixels / secs;
 
-            msg = String.format("Graphics: %.1f tri/s, %.1f pix/s", triPerSec, pixPerSec);
+            msg = String.format("Buffered: %,.1f tri/s, %,.1f pix/s", triPerSec, pixPerSec);
         }
 
         System.out.println(msg);
