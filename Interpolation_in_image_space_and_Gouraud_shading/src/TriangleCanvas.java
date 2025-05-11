@@ -153,6 +153,7 @@ public class TriangleCanvas extends JFrame {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+            super.paintComponent(g);
 
             int width = getWidth();
             int height = getHeight();

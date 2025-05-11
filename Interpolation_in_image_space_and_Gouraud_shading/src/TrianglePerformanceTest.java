@@ -81,8 +81,8 @@ public class TrianglePerformanceTest extends JPanel {
             t1 = System.nanoTime();
             g.dispose();
             secs = (t1 - t0) / 1e9;
-            triPerSec = triangles.size() / secs;
             pixPerSec = pixels / secs;
+            triPerSec = triangles.size() / secs;
 
             msg = String.format("Buffered: %,.1f tri/s, %,.1f pix/s", triPerSec, pixPerSec);
         }

@@ -230,19 +230,23 @@ public class Triangle2D {
                     clamp(Math.round(bCurr))
             );
 
-            if (mode == RenderMode.BUFFERED_IMAGE) {
-                image.setRGB(x, y, interpolatedColor.getRGB());
-            } else {
-                g.setColor(interpolatedColor);
-                g.fillRect(x, y, 1, 1);
-            }
-
-            pixelsDrawn++;
+            drawPixel(image, g, x, y, interpolatedColor);
 
             rCurr += rStep;
             gCurr += gStep;
             bCurr += bStep;
         }
+    }
+
+    //Draw pixel
+    private void drawPixel(BufferedImage image, Graphics g, int x, int y, Color color) {
+        if (image != null) {
+            image.setRGB(x, y, color.getRGB());
+        } else if (g != null) {
+            g.setColor(color);
+            g.fillRect(x, y, 1, 1);
+        }
+        pixelsDrawn++;
     }
 
     private Color interpolateColor(Color c1, Color c2, float t) {
