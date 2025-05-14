@@ -3,25 +3,22 @@ import java.awt.image.BufferedImage;
 
 class Renderer {
     public BufferedImage render(Scene scene) {
-        BufferedImage image = new BufferedImage(scene.imageWidth, scene.imageHeight, BufferedImage.TYPE_INT_RGB);
+        int n = scene.imageWidth; // Zakładamy, że obraz jest kwadratowy
+        BufferedImage image = new BufferedImage(n, n, BufferedImage.TYPE_INT_RGB);
 
-        double aspectRatio = (double) scene.imageWidth / scene.imageHeight;
-        double viewportHeight = 2.0;
-        double viewportWidth = aspectRatio * viewportHeight;
+        double radius = scene.sphere.radius;
 
-        for (int y = 0; y < scene.imageHeight; y++) {
-            for (int x = 0; x < scene.imageWidth; x++) {
-                // Mapuj piksel do przestrzeni świata
-                double u = (x + 0.5) / scene.imageWidth;
-                double v = (y + 0.5) / scene.imageHeight;
+        for (int i = 0; i < n; i++) {         // i = wiersz (pion)
+            for (int j = 0; j < n; j++) {     // j = kolumna (poziom)
 
-                // Konwertuj do współrzędnych widoku
-                double worldX = -viewportWidth/2 + u * viewportWidth;
-                double worldY = viewportHeight/2 - v * viewportHeight;
+                // Oblicz współrzędne środka piksela na ekranie
+                double world_x = -radius + (2 * radius * (j + 0.5)) / n;
+                double world_y = radius - (2 * radius * (i + 0.5)) / n;
+                double wolrd_z = -radius;
 
                 // Równoległe promienie mają ten sam kierunek
-                Vector3 direction = new Vector3(0, 0, 1).normalize();
-                Vector3 rayOrigin = new Vector3(worldX, worldY, -scene.sphere.radius);
+                Vector3 direction = new Vector3(0, 0, 1);
+                Vector3 rayOrigin = new Vector3(world_x, world_y, wolrd_z);
 
                 Ray ray = new Ray(rayOrigin, direction);
                 Vector3 color = traceRay(ray, scene);
@@ -39,7 +36,7 @@ class Renderer {
                 int b = (int) (color.z * 255);
                 int rgb = (r << 16) | (g << 8) | b;
 
-                image.setRGB(x, y, rgb);
+                image.setRGB(j, i, rgb);
             }
         }
 
@@ -48,13 +45,12 @@ class Renderer {
 
     private Vector3 traceRay(Ray ray, Scene scene) {
         double[] t = new double[1];
-
         if (scene.sphere.intersect(ray, t)) {
             // Oblicz punkt przecięcia
             Vector3 hitPoint = ray.origin.add(ray.direction.multiply(t[0]));
 
-            // Oblicz normalną w punkcie przecięcia
-            Vector3 normal = scene.sphere.getNormalAt(hitPoint);
+            // Oblicz normalną w punkcie przecięcia (uproszczone dla kuli o środku w (0,0,0))
+            Vector3 normal = hitPoint.normalize(); // Dla kuli w (0,0,0) normalna to po prostu znormalizowany wektor pozycji
 
             // Pobierz właściwości materiału
             Material material = scene.sphere.material;
@@ -105,11 +101,11 @@ class Renderer {
                         material.specularCoeff.z * light.intensity.z * specularFactor * attenuation
                 ));
             }
-
             return color;
         }
 
         // Brak przecięcia, zwróć czarny (kolor tła)
         return new Vector3(0, 0, 0);
     }
+
 }

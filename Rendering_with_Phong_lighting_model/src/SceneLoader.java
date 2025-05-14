@@ -59,7 +59,6 @@ class SceneLoader {
             );
 
             scene.sphere = new Sphere(
-                    new Vector3(sphereValues[0], sphereValues[1], sphereValues[2]),
                     sphereValues[3],
                     material
             );
