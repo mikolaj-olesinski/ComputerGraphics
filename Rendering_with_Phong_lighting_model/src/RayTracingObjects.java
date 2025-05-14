@@ -40,38 +40,17 @@ class Sphere {
     }
 
     public boolean intersect(Ray ray, double[] t) {
-        // Założenie: środek kuli jest w (0,0,0), więc vector 'oc' to po prostu ray.origin
-        Vector3 oc = ray.origin;
-
-        double a = ray.direction.dot(ray.direction);
-        double b = 2.0 * oc.dot(ray.direction);
-        double c = oc.dot(oc) - radius * radius; // oc.dot(oc) to kwadrat długości wektora oc
-
-        double discriminant = b * b - 4 * a * c;
-        if (discriminant < 0) return false;
-
-        double sqrtDiscriminant = Math.sqrt(discriminant);
-        double t0 = (-b - sqrtDiscriminant) / (2 * a);
-        double t1 = (-b + sqrtDiscriminant) / (2 * a);
-
-        if (t0 > t1) {
-            double temp = t0;
-            t0 = t1;
-            t1 = temp;
+        double x = ray.origin.x;
+        double y = ray.origin.y;
+        // x^2 + y^2 < r^2
+        if (x*x + y*y >= radius*radius) {
+            return false;
         }
-
-        if (t0 < 0) {
-            t0 = t1;
-            if (t0 < 0) return false;
-        }
-
-        t[0] = t0;
+        // t = r - sqrt(r^2 - x^2 - y^2)
+        t[0] = radius - Math.sqrt(radius*radius - x*x - y*y);
         return true;
     }
 
-    public Vector3 getNormalAt(Vector3 point) {
-        return point.subtract(center).normalize();
-    }
 }
 
 // PointLight class

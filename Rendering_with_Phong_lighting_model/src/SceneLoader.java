@@ -22,7 +22,7 @@ class SceneLoader {
         try (Scanner scanner = new Scanner(new File(fileName))) {
             scanner.useLocale(java.util.Locale.US);
 
-            // Znajdź liczbę świateł (pomijaj komentarze)
+            // Find number of lights
             int numLights = 0;
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
@@ -31,7 +31,7 @@ class SceneLoader {
                 break;
             }
 
-            // Wczytaj światła
+            // Load lights
             for (int i = 0; i < numLights; i++) {
                 double[] values = readNextDoubles(scanner, 6);
                 scene.lights.add(new PointLight(
@@ -40,10 +40,10 @@ class SceneLoader {
                 ));
             }
 
-            // Wczytaj właściwości kuli
+            //Load sphere properties
             double[] sphereValues = readNextDoubles(scanner, 4);
 
-            // Wczytaj właściwości materiału
+            //Load material properties
             double[] kd = readNextDoubles(scanner, 3); // difuzja
             double[] ks = readNextDoubles(scanner, 3); // odbicia lustrzane
             double[] ka = readNextDoubles(scanner, 3); // światło otoczenia
@@ -63,16 +63,16 @@ class SceneLoader {
                     material
             );
 
-            // Wczytaj natężenie światła otoczenia
+            //Load ambient light
             double[] ambient = readNextDoubles(scanner, 3);
             scene.ambientLight = new Vector3(ambient[0], ambient[1], ambient[2]);
 
-            // Wczytaj rozdzielczość obrazu
+            // Load resolution
             int[] resolution = readNextInts(scanner, 2);
             scene.imageWidth = resolution[0];
             scene.imageHeight = resolution[1];
 
-            // Wczytaj nazwę pliku wyjściowego
+            // Load output file name
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
                 if (line.isEmpty() || line.startsWith("#")) continue;
