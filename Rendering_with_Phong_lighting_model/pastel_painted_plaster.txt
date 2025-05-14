@@ -1,0 +1,39 @@
+# sphere.txt
+# Example scene description for the Phong sphere renderer
+
+# Number of point lights
+2
+
+# Light 1: position (x, y, z) and intensity (r, g, b)
+3.0 2.0 -2.0  1.0 1.0 1.0
+
+# Light 2: position (x, y, z) and intensity (r, g, b)
+-2.0 1.0 -1.0  0.6 0.6 0.8
+
+# Sphere properties: center (x, y, z) and radius
+0.0 0.0 0.0  1.0
+
+# Material properties:
+# Diffuse reflection coefficients (kdR, kdG, kdB)
+0.75 0.65 0.6
+
+# Specular reflection coefficients (ksR, ksG, ksB)
+0.1 0.1 0.1
+
+# Ambient reflection coefficients (kaR, kaG, kaB)
+0.15 0.1 0.1
+
+# Self luminance (SR, SG, SB)
+0.0 0.0 0.0
+
+# Glossiness coefficient (g)
+12.0
+
+# Ambient light intensities (AR, AG, AB)
+0.2 0.2 0.2
+
+# Image resolution (width, height)
+800 800
+
+# Output file name
+pastle_painted_plaster.png

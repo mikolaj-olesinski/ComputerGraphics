@@ -70,13 +70,12 @@ class Renderer {
                 Vector3 lightDir = light.position.subtract(hitPoint).normalize();
 
                 //fan(r)
-                double distToLight = Math.sqrt(light.position.subtract(hitPoint).dot(
-                        light.position.subtract(hitPoint)));
+                Vector3 lightToHit = light.position.subtract(hitPoint);
+                double distToLight = Math.sqrt(lightToHit.dot(lightToHit));
 
                 double c1 = 0.05;
                 double c2 = 0.005;
                 double attenuation = Math.min(1.0, 1.0 / (1.0 + c1 * distToLight + c2 * distToLight * distToLight));
-
 
                 //diffuse
                 double diffuseFactor = Math.max(0, normal.dot(lightDir));
@@ -87,8 +86,8 @@ class Renderer {
                         material.diffuseCoeff.z * light.intensity.z * diffuseFactor * attenuation
                 ));
 
-                Vector3 reflectedLight = lightDir.multiply(-1).reflect(normal);
-                double specularFactor = Math.pow(Math.max(0, reflectedLight.dot(viewDir)), material.glossiness);
+                Vector3 reflectedViewDir = viewDir.multiply(-1).reflect(normal);
+                double specularFactor = Math.pow(Math.max(0, reflectedViewDir.dot(lightDir)), material.glossiness);
 
                 color = color.add(new Vector3(
                         material.specularCoeff.x * light.intensity.x * specularFactor * attenuation,
