@@ -1,15 +1,12 @@
-// Main class
-import javax.swing.JFileChooser;
+import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
-import javax.swing.WindowConstants;
 
 public class PhongSphereRaytracer {
     public static void main(String[] args) {
-
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Wybierz plik sceny");
         fileChooser.setFileFilter(new FileNameExtensionFilter("Pliki tekstowe (*.txt)", "txt"));
@@ -20,26 +17,43 @@ public class PhongSphereRaytracer {
             return;
         }
 
-        String sceneFile = fileChooser.getSelectedFile().getAbsolutePath();
+        File sceneFile = fileChooser.getSelectedFile();
+
+        JFrame frame = new JFrame("Phong Sphere Raytracer");
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
+
+        // Panel obrazka
+        ImagePanel imagePanel = new ImagePanel(renderScene(sceneFile.getAbsolutePath()));
+        frame.add(imagePanel, BorderLayout.CENTER);
+
+        // Przycisk odświeżania
+        JButton refreshButton = new JButton("Odśwież");
+        refreshButton.addActionListener(e -> {
+            BufferedImage newImage = renderScene(sceneFile.getAbsolutePath());
+            imagePanel.setImage(newImage);
+            imagePanel.repaint();
+        });
+        frame.add(refreshButton, BorderLayout.SOUTH);
+
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
+    private static BufferedImage renderScene(String sceneFile) {
         SceneLoader loader = new SceneLoader();
         Scene scene = loader.loadScene(sceneFile);
 
         if (scene == null) {
             System.out.println("Nie udało się załadować sceny z pliku: " + sceneFile);
-            return;
+            return null;
         }
 
         Renderer renderer = new Renderer();
         BufferedImage image = renderer.render(scene);
 
         try {
-            JFrame frame = new JFrame("Phong Sphere Raytracer");
-            frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-            frame.setLocationRelativeTo(null);
-            frame.getContentPane().add(new ImagePanel(image));
-            frame.pack();
-            frame.setVisible(true);
-
             File outputFile = new File(scene.outputFileName);
             String fileExtension = scene.outputFileName.substring(scene.outputFileName.lastIndexOf('.') + 1);
             ImageIO.write(image, fileExtension.toUpperCase(), outputFile);
@@ -47,5 +61,7 @@ public class PhongSphereRaytracer {
         } catch (Exception e) {
             System.out.println("Błąd podczas zapisywania obrazu: " + e.getMessage());
         }
+
+        return image;
     }
 }

@@ -14,20 +14,12 @@
 0.0 0.0 0.0  1.0
 
 # Material properties:
-# Diffuse reflection coefficients (kdR, kdG, kdB)
-0.75 0.65 0.6
-
-# Specular reflection coefficients (ksR, ksG, ksB)
-0.1 0.1 0.1
-
-# Ambient reflection coefficients (kaR, kaG, kaB)
-0.15 0.1 0.1
-
-# Self luminance (SR, SG, SB)
-0.0 0.0 0.0
-
-# Glossiness coefficient (g)
-12.0
+# Material properties:
+0.7 0.1 0.1   # Diffuse
+0.0 0.0 0.0   # Specular
+0.1 0.0 0.0   # Ambient
+0.0 0.0 0.0   # Self luminance
+1.0           # Glossiness
 
 # Ambient light intensities (AR, AG, AB)
 0.2 0.2 0.2
@@ -36,4 +28,4 @@
 800 800
 
 # Output file name
-pastle_painted_plaster.png
+matte_plastic_red2.png

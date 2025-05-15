@@ -14,20 +14,12 @@
 0.0 0.0 0.0  1.0
 
 # Material properties:
-# Diffuse reflection coefficients (kdR, kdG, kdB)
-0.9 0.9 0.9
-
-# Specular reflection coefficients (ksR, ksG, ksB)
-0.02 0.02 0.02
-
-# Ambient reflection coefficients (kaR, kaG, kaB)
-0.2 0.2 0.2
-
-# Self luminance (SR, SG, SB)
-0.0 0.0 0.0
-
-# Glossiness coefficient (g)
-2.0
+# Material properties:
+0.7 0.7 0.7   # Diffuse (kdR, kdG, kdB)
+0.1 0.1 0.1   # Specular (ksR, ksG, ksB)
+0.7 0.7 0.7   # Ambient (kaR, kaG, kaB)
+0.0 0.0 0.0   # Self luminance
+10.0          # Glossiness
 
 # Ambient light intensities (AR, AG, AB)
 0.2 0.2 0.2
@@ -36,4 +28,4 @@
 800 800
 
 # Output file name
-white_gypsum_plaster.png
+white_gypsum_plaster2.png

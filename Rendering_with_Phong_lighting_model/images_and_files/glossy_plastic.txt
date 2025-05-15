@@ -14,20 +14,12 @@
 0.0 0.0 0.0  1.0
 
 # Material properties:
-# Diffuse reflection coefficients (kdR, kdG, kdB)
-0.5 0.5 0.5
-
-# Specular reflection coefficients (ksR, ksG, ksB)
-0.8 0.8 0.8
-
-# Ambient reflection coefficients (kaR, kaG, kaB)
-0.1 0.1 0.1
-
-# Self luminance (SR, SG, SB)
-0.0 0.0 0.0
-
-# Glossiness coefficient (g)
-64.0
+# Material properties:
+0.0 0.0 0.8   # Diffuse
+1.0 1.0 1.0   # Specular
+0.05 0.05 0.2 # Ambient
+0.0 0.0 0.0   # Self luminance
+500.0         # Glossiness
 
 # Ambient light intensities (AR, AG, AB)
 0.2 0.2 0.2
@@ -36,4 +28,4 @@
 800 800
 
 # Output file name
-glossy_plastic.png
+glossy_plastic2.png

@@ -17,4 +17,10 @@ class ImagePanel extends JPanel {
         super.paintComponent(g);
         g.drawImage(image, 0, 0, null);
     }
+
+    public void setImage(BufferedImage image) {
+        this.image = image;
+        setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
+        revalidate();
+    }
 }

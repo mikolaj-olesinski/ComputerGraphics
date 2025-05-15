@@ -98,6 +98,7 @@ class Vector3 {
 
     public Vector3 reflect(Vector3 normal) {
         double dotProduct = this.dot(normal);
+        // Reflection formula: R = I - 2 * (I . N) * N
         return this.subtract(normal.multiply(2 * dotProduct));
     }
 }

@@ -2,13 +2,13 @@
 # Example scene description for the Phong sphere renderer
 
 # Number of point lights
-2
+1
 
 # Light 1: position (x, y, z) and intensity (r, g, b)
-3.0 2.0 -2.0  1.0 1.0 1.0
+0.0 5.0 -4.0  1.0 1.0 1.0
 
 # Light 2: position (x, y, z) and intensity (r, g, b)
--2.0 1.0 -1.0  0.6 0.6 0.8
+#-2.0 1.0 -1.0  0.6 0.6 0.8
 
 # Sphere properties: center (x, y, z) and radius
 0.0 0.0 0.0  1.0
