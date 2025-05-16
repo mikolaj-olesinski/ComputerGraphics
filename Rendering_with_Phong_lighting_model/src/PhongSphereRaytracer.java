@@ -23,11 +23,9 @@ public class PhongSphereRaytracer {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        // Panel obrazka
         ImagePanel imagePanel = new ImagePanel(renderScene(sceneFile.getAbsolutePath()));
         frame.add(imagePanel, BorderLayout.CENTER);
 
-        // Przycisk odświeżania
         JButton refreshButton = new JButton("Odśwież");
         refreshButton.addActionListener(e -> {
             BufferedImage newImage = renderScene(sceneFile.getAbsolutePath());

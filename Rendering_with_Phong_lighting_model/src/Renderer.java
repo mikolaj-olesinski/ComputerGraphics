@@ -1,4 +1,5 @@
 // Renderer class
+import java.awt.*;
 import java.awt.image.BufferedImage;
 
 class Renderer {
@@ -17,9 +18,9 @@ class Renderer {
 
 
                 Vector3 direction = new Vector3(0, 0, 1);
-                Vector3 rayOrigin = new Vector3(world_x, world_y, wolrd_z);
+                Vector3 rayFrom = new Vector3(world_x, world_y, wolrd_z);
 
-                Ray ray = new Ray(rayOrigin, direction);
+                Ray ray = new Ray(rayFrom, direction);
                 Vector3 color = traceRay(ray, scene);
 
 
@@ -32,7 +33,7 @@ class Renderer {
                 int r = (int) (color.x * 255);
                 int g = (int) (color.y * 255);
                 int b = (int) (color.z * 255);
-                int rgb = (r << 16) | (g << 8) | b;
+                int rgb = new Color(r, g, b).getRGB();
 
                 image.setRGB(j, i, rgb);
             }
@@ -46,7 +47,8 @@ class Renderer {
 
         if (scene.sphere.intersect(ray, t)) {
 
-            Vector3 hitPoint = new Vector3(ray.origin.x, ray.origin.y, ray.origin.z + t[0]);
+            // t[0] - distance to the intersection point
+            Vector3 hitPoint = new Vector3(ray.origin.x, ray.origin.y, t[0]);
 
             Vector3 normal = hitPoint.normalize();
 
@@ -55,7 +57,7 @@ class Renderer {
             Vector3 viewDir = new Vector3(0, 0, -1);
 
 
-            // Oc
+            // Sc
             Vector3 color = material.selfLuminance;
 
             //kaC * Ac
@@ -85,6 +87,8 @@ class Renderer {
                         material.diffuseCoeff.y * light.intensity.y * diffuseFactor * attenuation,
                         material.diffuseCoeff.z * light.intensity.z * diffuseFactor * attenuation
                 ));
+
+                //specular
 
                 Vector3 reflectedViewDir = viewDir.multiply(-1).reflect(normal);
                 double specularFactor = Math.pow(Math.max(0, reflectedViewDir.dot(lightDir)), material.glossiness);
