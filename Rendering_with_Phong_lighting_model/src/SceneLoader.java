@@ -41,14 +41,14 @@ class SceneLoader {
             }
 
             //Load sphere properties
-            double[] sphereValues = readNextDoubles(scanner, 4);
+            double[] sphereValues = readNextDoubles(scanner, 1);
 
             //Load material properties
-            double[] kd = readNextDoubles(scanner, 3); // difuzja
-            double[] ks = readNextDoubles(scanner, 3); // odbicia lustrzane
-            double[] ka = readNextDoubles(scanner, 3); // światło otoczenia
-            double[] s = readNextDoubles(scanner, 3);  // własne świecenie
-            double glossiness = readNextDoubles(scanner, 1)[0]; // połyskliwość
+            double[] kd = readNextDoubles(scanner, 3);
+            double[] ks = readNextDoubles(scanner, 3);
+            double[] ka = readNextDoubles(scanner, 3);
+            double[] s = readNextDoubles(scanner, 3);
+            double glossiness = readNextDoubles(scanner, 1)[0];
 
             Material material = new Material(
                     new Vector3(kd[0], kd[1], kd[2]),
@@ -59,7 +59,7 @@ class SceneLoader {
             );
 
             scene.sphere = new Sphere(
-                    sphereValues[3],
+                    sphereValues[0],
                     material
             );
 

@@ -1,3 +1,5 @@
+import java.awt.*;
+
 // Ray class
 class Ray {
     Vector3 origin;
@@ -47,7 +49,8 @@ class Sphere {
             return false;
         }
         // t = r - sqrt(r^2 - x^2 - y^2)
-        t[0] = radius - Math.sqrt(radius*radius - x*x - y*y);
+        // distance
+        t[0] = -Math.sqrt(radius*radius - x*x - y*y);
         return true;
     }
 
