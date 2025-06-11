@@ -1,162 +1,179 @@
 import sys
-import math
 import numpy as np
-from PIL import Image
+import math
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
+
+import numpy as np
+import math
+from OpenGL.GL import *
+from OpenGL.GLU import *
+
 class Camera:
     def __init__(self):
-        self.eye = np.array([0.0, 0.0, 5.0])
-        self.target = np.array([0.0, 0.0, 0.0], dtype=np.float64)
+        self.eye = np.array([5.0, 5.0, 5.0])
+        self.target = np.array([0.0, 0.0, 0.0])
         self.up = np.array([0.0, 1.0, 0.0])
-        self.speed = 0.1
-        self.orbit_speed = 0.01
-        self.pan_speed = 0.05
-        self.radius = np.linalg.norm(self.eye - self.target)
         
+        # Punkt wokół którego orbitujemy (niezależny od target)
+        self.orbit_center = np.array([0.0, 0.0, 0.0])
+        
+        # Oblicz początkowe kąty z obecnej pozycji
+        self._calculate_initial_angles()
+
+    def _calculate_initial_angles(self):
+        view_dir = self.target - self.eye
+        view_dir = view_dir / np.linalg.norm(view_dir)
+        
+        # Yaw (obrót wokół osi Y) - kąt w płaszczyźnie XZ
+        self.yaw = math.atan2(view_dir[2], view_dir[0])
+        
+        # Pitch (obrót wokół osi X) - kąt w pionie
+        self.pitch = math.asin(np.clip(view_dir[1], -1.0, 1.0))
+
     def look_at(self):
-        gluLookAt(
-            self.eye[0], self.eye[1], self.eye[2],
-            self.target[0], self.target[1], self.target[2],
-            self.up[0], self.up[1], self.up[2]
-        )
-    
-    def move_forward(self):
-        direction = (self.target - self.eye) * self.speed
-        self.eye += direction
-        self.target += direction
-    
-    def move_backward(self):
-        direction = (self.target - self.eye) * self.speed
-        self.eye -= direction
-        self.target -= direction
-    
-    def pan_left(self):
-        right = np.cross(self.target - self.eye, self.up)
-        right = right / np.linalg.norm(right)
-        self.eye -= right * self.pan_speed
-        self.target -= right * self.pan_speed
-    
-    def pan_right(self):
-        right = np.cross(self.target - self.eye, self.up)
-        right = right / np.linalg.norm(right)
-        self.eye += right * self.pan_speed
-        self.target += right * self.pan_speed
-    
-    def pan_up(self):
-        self.eye += self.up * self.pan_speed
-        self.target += self.up * self.pan_speed
-    
-    def pan_down(self):
-        self.eye -= self.up * self.pan_speed
-        self.target -= self.up * self.pan_speed
-    
-    def orbit_left(self):
-        direction = self.eye - self.target
-        cos_theta = math.cos(self.orbit_speed)
-        sin_theta = math.sin(self.orbit_speed)
+        gluLookAt(*self.eye, *self.target, *self.up)
+
+    def pan(self, dx, dy):
+        view_dir = self.target - self.eye
+        view_dir /= np.linalg.norm(view_dir)
+
+        right = np.cross(view_dir, self.up)
+        right /= np.linalg.norm(right)
+
+        up = self.up
+
+        translation = dx * right + dy * up
+        self.eye += translation
+        self.target += translation
         
-        new_x = direction[0] * cos_theta + direction[2] * sin_theta
-        new_z = -direction[0] * sin_theta + direction[2] * cos_theta
+
+    def walk(self, dz):
+        view_dir = self.target - self.eye
+        view_dir /= np.linalg.norm(view_dir)
+
+        translation = dz * view_dir
+        self.eye += translation
+        self.target += translation
         
-        direction = np.array([new_x, direction[1], new_z])
-        self.eye = self.target + direction
-    
-    def orbit_right(self):
-        direction = self.eye - self.target
-        cos_theta = math.cos(-self.orbit_speed)
-        sin_theta = math.sin(-self.orbit_speed)
+
+    def rotate(self, d_yaw, d_pitch):
+        print(f"ROTATE: eye={self.eye}, target={self.target}")
         
-        new_x = direction[0] * cos_theta + direction[2] * sin_theta
-        new_z = -direction[0] * sin_theta + direction[2] * cos_theta
+        # Aktualizuj kąty
+        self.yaw += d_yaw
+        self.pitch += d_pitch
         
-        direction = np.array([new_x, direction[1], new_z])
-        self.eye = self.target + direction
-    
-    def orbit_up(self):
-        direction = self.eye - self.target
-        right = np.cross(direction, self.up)
-        right = right / np.linalg.norm(right)
+        # Ogranicz pitch żeby nie przewrócić kamery
+        max_pitch = math.pi / 2 - 0.1  # 80 stopni
+        old_pitch = self.pitch
+        self.pitch = max(-max_pitch, min(max_pitch, self.pitch))
         
-        cos_theta = math.cos(self.orbit_speed)
-        sin_theta = math.sin(self.orbit_speed)
+        # Oblicz nowy kierunek patrzenia
+        x = math.cos(self.pitch) * math.cos(self.yaw)
+        y = math.sin(self.pitch)
+        z = math.cos(self.pitch) * math.sin(self.yaw)
         
-        new_y = direction[1] * cos_theta - direction[2] * sin_theta
-        new_z = direction[1] * sin_theta + direction[2] * cos_theta
+        view_dir = np.array([x, y, z])
+        length = np.linalg.norm(view_dir)
         
-        direction = np.array([direction[0], new_y, new_z])
-        self.eye = self.target + direction
-    
-    def orbit_down(self):
-        direction = self.eye - self.target
-        right = np.cross(direction, self.up)
-        right = right / np.linalg.norm(right)
         
-        cos_theta = math.cos(-self.orbit_speed)
-        sin_theta = math.sin(-self.orbit_speed)
+        if length > 0:
+            view_dir = view_dir / length
+        else:
+            print("BŁĄD: view_dir ma zerową długość!")
+            return
         
-        new_y = direction[1] * cos_theta - direction[2] * sin_theta
-        new_z = direction[1] * sin_theta + direction[2] * cos_theta
+        # Zachowaj odległość od target
+        current_distance = np.linalg.norm(self.target - self.eye)
+        if current_distance < 0.1:
+            current_distance = 5.0  # domyślna odległość
         
-        direction = np.array([direction[0], new_y, new_z])
-        self.eye = self.target + direction
-    
-    def look_left(self):
-        direction = self.target - self.eye
-        cos_theta = math.cos(self.orbit_speed)
-        sin_theta = math.sin(self.orbit_speed)
+        self.target = self.eye + current_distance * view_dir
+        print(f"ROTATE RESULT: eye={self.eye}, target={self.target}, distance={current_distance}")
+
+    def orbit(self, d_theta, d_phi):
+        """
+        Orbituje kamerę wokół punktu orbit_center.
+        d_theta - zmiana kąta azymutalnego (poziomo)
+        d_phi - zmiana kąta polarnego (pionowo)
+        """
+        print(f"ORBIT START: eye={self.eye}, center={self.orbit_center}")
         
-        new_x = direction[0] * cos_theta - direction[2] * sin_theta
-        new_z = direction[0] * sin_theta + direction[2] * cos_theta
+        # Wektor od orbit_center do eye
+        to_eye = self.eye - self.orbit_center
+        radius = np.linalg.norm(to_eye)
         
-        self.target = self.eye + np.array([new_x, direction[1], new_z])
-    
-    def look_right(self):
-        direction = self.target - self.eye
-        cos_theta = math.cos(-self.orbit_speed)
-        sin_theta = math.sin(-self.orbit_speed)
+        print(f"ORBIT: radius={radius}")
         
-        new_x = direction[0] * cos_theta - direction[2] * sin_theta
-        new_z = direction[0] * sin_theta + direction[2] * cos_theta
+        if radius < 0.001:  # Unikaj dzielenia przez zero
+            print("BŁĄD: Za mała odległość od centrum orbitowania!")
+            return
+            
+        # Konwertuj do współrzędnych sferycznych
+        # theta - kąt w płaszczyźnie XZ (azymut)
+        # phi - kąt od osi Y (wysokość)
         
-        self.target = self.eye + np.array([new_x, direction[1], new_z])
-    
-    def look_up(self):
-        direction = self.target - self.eye
-        right = np.cross(direction, self.up)
-        right = right / np.linalg.norm(right)
+        theta = math.atan2(to_eye[2], to_eye[0])
+        phi = math.acos(np.clip(to_eye[1] / radius, -1.0, 1.0))
         
-        cos_theta = math.cos(self.orbit_speed)
-        sin_theta = math.sin(self.orbit_speed)
+        print(f"ORBIT: theta={math.degrees(theta):.1f}°, phi={math.degrees(phi):.1f}°")
         
-        new_y = direction[1] * cos_theta + direction[2] * sin_theta
-        new_z = -direction[1] * sin_theta + direction[2] * cos_theta
+        # Aktualizuj kąty
+        theta += d_theta
+        phi += d_phi
         
-        self.target = self.eye + np.array([direction[0], new_y, new_z])
-    
-    def look_down(self):
-        direction = self.target - self.eye
-        right = np.cross(direction, self.up)
-        right = right / np.linalg.norm(right)
+        # Ogranicz phi żeby nie przejść przez bieguny
+        phi = np.clip(phi, 0.1, math.pi - 0.1)
         
-        cos_theta = math.cos(-self.orbit_speed)
-        sin_theta = math.sin(-self.orbit_speed)
+        # Konwertuj z powrotem do współrzędnych kartezjańskich
+        x = radius * math.sin(phi) * math.cos(theta)
+        y = radius * math.cos(phi)
+        z = radius * math.sin(phi) * math.sin(theta)
         
-        new_y = direction[1] * cos_theta + direction[2] * sin_theta
-        new_z = -direction[1] * sin_theta + direction[2] * cos_theta
+        # Ustaw nową pozycję kamery
+        self.eye = self.orbit_center + np.array([x, y, z])
         
-        self.target = self.eye + np.array([direction[0], new_y, new_z])
+        # Ustaw target tak żeby patrzeć na centrum orbitowania
+        self.target = self.orbit_center.copy()
+        
+        # Przelicz kąty dla funkcji rotate
+        self._calculate_initial_angles()
+        
+        print(f"ORBIT END: eye={self.eye}, target={self.target}")
+
+    def reset_camera(self):
+        """Resetuj kamerę do pozycji początkowej"""
+        print("RESETOWANIE KAMERY")
+        self.eye = np.array([5.0, 5.0, 5.0])
+        self.target = np.array([0.0, 0.0, 0.0])
+        self.orbit_center = np.array([0.0, 0.0, 0.0])
+        self.up = np.array([0.0, 1.0, 0.0])
+        self._calculate_initial_angles()
+        print(f"RESET: eye={self.eye}, target={self.target}")
+
+    def set_orbit_center(self, center=None):
+        """
+        Ustaw punkt wokół którego chcemy orbitować.
+        Jeśli center=None, użyj obecnego target jako centrum.
+        """
+        if center is None:
+            self.orbit_center = self.target.copy()
+        else:
+            self.orbit_center = np.array(center)
+        print(f"ORBIT CENTER ustawione na: {self.orbit_center}")
+        
 
 class Material:
     def __init__(self, name):
         self.name = name
-        self.Ka = np.array([0.2, 0.2, 0.2])  # Ambient
-        self.Kd = np.array([0.8, 0.8, 0.8])  # Diffuse
-        self.Ks = np.array([1.0, 1.0, 1.0])  # Specular
-        self.Ns = 32.0  # Specular exponent
-        self.d = 1.0    # Transparency
+        self.Ka = np.array([0.2, 0.2, 0.2])
+        self.Kd = np.array([0.8, 0.8, 0.8])
+        self.Ks = np.array([1.0, 1.0, 1.0])
+        self.Ns = 32.0
+        self.d = 1.0
 
 class Model:
     def __init__(self):
@@ -165,28 +182,18 @@ class Model:
         self.faces = []
         self.materials = {}
         self.current_material = None
-        self.bbox_min = np.array([float('inf')]*3)
-        self.bbox_max = np.array([-float('inf')]*3)
-    
+
     def load_mtl(self, filename):
         current_mtl = None
-        mtl_path = filename
-        
         try:
-            with open(mtl_path, 'r') as f:
+            with open(filename, 'r') as f:
                 for line in f:
-                    line = line.strip()
-                    if not line or line.startswith('#'):
+                    tokens = line.strip().split()
+                    if not tokens or tokens[0].startswith('#'):
                         continue
-                    
-                    tokens = line.split()
-                    if not tokens:
-                        continue
-                    
                     if tokens[0] == 'newmtl':
                         current_mtl = Material(tokens[1])
                         self.materials[tokens[1]] = current_mtl
-                    
                     elif current_mtl:
                         if tokens[0] == 'Ka':
                             current_mtl.Ka = np.array(list(map(float, tokens[1:4])))
@@ -198,42 +205,21 @@ class Model:
                             current_mtl.Ns = float(tokens[1])
                         elif tokens[0] == 'd':
                             current_mtl.d = float(tokens[1])
-                        elif tokens[0] == 'map_Kd':
-                            try:
-                                img = Image.open(tokens[1])
-                                img = img.convert('RGB')
-                                pixels = list(img.getdata())
-                                avg_color = np.sum(pixels, axis=0) / len(pixels) / 255.0
-                                current_mtl.Kd = avg_color
-                            except Exception as e:
-                                print(f"Błąd wczytywania tekstury: {e}")
-        
         except Exception as e:
             print(f"Błąd wczytywania MTL: {e}")
-    
+
     def load_obj(self, filename):
-        obj_path = filename
-        mtl_dir = obj_path[:obj_path.rfind('/')+1] if '/' in obj_path else ""
-        
+        mtl_dir = filename[:filename.rfind('/')+1] if '/' in filename else ""
         try:
-            with open(obj_path, 'r') as f:
+            with open(filename, 'r') as f:
                 for line in f:
-                    line = line.strip()
-                    if not line or line.startswith('#'):
+                    tokens = line.strip().split()
+                    if not tokens or tokens[0].startswith('#'):
                         continue
-                    
-                    tokens = line.split()
-                    if not tokens:
-                        continue
-                    
                     if tokens[0] == 'v':
-                        vertex = np.array(list(map(float, tokens[1:4])))
-                        self.vertices.append(vertex)
-                        self.update_bbox(vertex)
-                    
+                        self.vertices.append(np.array(list(map(float, tokens[1:4]))))
                     elif tokens[0] == 'vn':
                         self.normals.append(np.array(list(map(float, tokens[1:4]))))
-                    
                     elif tokens[0] == 'f':
                         face_verts = []
                         for token in tokens[1:]:
@@ -242,29 +228,15 @@ class Model:
                             n_idx = int(parts[2]) - 1 if len(parts) > 2 and parts[2] else -1
                             face_verts.append((v_idx, n_idx))
                         self.faces.append((self.current_material, face_verts))
-                    
                     elif tokens[0] == 'mtllib':
                         self.load_mtl(mtl_dir + tokens[1])
-                    
                     elif tokens[0] == 'usemtl':
                         self.current_material = self.materials.get(tokens[1])
-        
         except Exception as e:
             print(f"Błąd wczytywania OBJ: {e}")
-    
-    def update_bbox(self, vertex):
-        self.bbox_min = np.minimum(self.bbox_min, vertex)
-        self.bbox_max = np.maximum(self.bbox_max, vertex)
-    
-    def center_scene(self):
-        center = (self.bbox_min + self.bbox_max) / 2.0
-        self.vertices = [v - center for v in self.vertices]
-        self.bbox_min -= center
-        self.bbox_max -= center
-    
+
     def draw(self):
         last_material = None
-        
         for material, face_verts in self.faces:
             if material != last_material:
                 if material:
@@ -273,20 +245,10 @@ class Model:
                     glMaterialfv(GL_FRONT, GL_SPECULAR, material.Ks)
                     glMaterialf(GL_FRONT, GL_SHININESS, min(material.Ns, 128.0))
                 last_material = material
-            
             glBegin(GL_POLYGON)
             for v_idx, n_idx in face_verts:
                 if n_idx >= 0 and n_idx < len(self.normals):
                     glNormal3fv(self.normals[n_idx])
-                else:
-                    # Oblicz normalną geometryczną jeśli brak
-                    if len(face_verts) >= 3:
-                        v0 = self.vertices[face_verts[0][0]]
-                        v1 = self.vertices[face_verts[1][0]]
-                        v2 = self.vertices[face_verts[2][0]]
-                        normal = np.cross(v1 - v0, v2 - v0)
-                        normal = normal / np.linalg.norm(normal)
-                        glNormal3fv(normal)
                 glVertex3fv(self.vertices[v_idx])
             glEnd()
 
@@ -297,92 +259,116 @@ class SceneViewer:
         self.camera = Camera()
         self.window_width = 800
         self.window_height = 600
-        self.init_camera = True
-    
+
     def init_lighting(self):
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glLightfv(GL_LIGHT0, GL_POSITION, [0, 10, 10, 1])
         glLightfv(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1, 1])
         glLightfv(GL_LIGHT0, GL_SPECULAR, [1, 1, 1, 1])
-        
         glEnable(GL_COLOR_MATERIAL)
         glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
-        
         glEnable(GL_DEPTH_TEST)
         glShadeModel(GL_SMOOTH)
-    
-    def setup_camera(self):
-        if self.init_camera:
-            self.init_camera = False
-            bbox_size = self.model.bbox_max - self.model.bbox_min
-            max_dim = max(bbox_size)
-            distance = max_dim * 2.0
-            
-            self.camera.eye = np.array([0, max_dim/2, distance])
-            self.camera.target = np.array([0, 0, 0])
-            self.camera.radius = distance
-    
+
     def display(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        
         self.camera.look_at()
         self.model.draw()
         glutSwapBuffers()
-    
+
     def reshape(self, w, h):
         self.window_width = w
         self.window_height = h
         glViewport(0, 0, w, h)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(45.0, w/h, 0.1, 100.0)
+        gluPerspective(45.0, w/h if h != 0 else 1, 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
-    
-    def keyboard(self, key, x, y):
-        key = key.decode('utf-8')
-        
-        if key == 'w': self.camera.move_forward()
-        elif key == 's': self.camera.move_backward()
-        elif key == 'a': self.camera.pan_left()
-        elif key == 'd': self.camera.pan_right()
-        elif key == 'q': self.camera.pan_down()
-        elif key == 'e': self.camera.pan_up()
-        elif key == 'i': self.camera.orbit_up()
-        elif key == 'k': self.camera.orbit_down()
-        elif key == 'j': self.camera.orbit_left()
-        elif key == 'l': self.camera.orbit_right()
-        elif key == 'f': self.camera.look_left()
-        elif key == 'h': self.camera.look_right()
-        elif key == 't': self.camera.look_up()
-        elif key == 'g': self.camera.look_down()
-        elif key == 'r':  # Reset kamery
-            self.init_camera = True
-            self.setup_camera()
-        
+
+    def handle_key(self, key, special=False):
+        step = 0.2
+        angle_step = math.radians(5)
+
+        if special:
+            # Strzałki - przesuwanie
+            if key == GLUT_KEY_LEFT:
+                self.camera.pan(-step, 0)
+            elif key == GLUT_KEY_RIGHT:
+                self.camera.pan(step, 0)
+            elif key == GLUT_KEY_UP:
+                self.camera.walk(step)
+            elif key == GLUT_KEY_DOWN:
+                self.camera.walk(-step)
+        else:
+            # WSAD - rozglądanie się
+            if key == b'w':  # patrz w górę
+                self.camera.rotate(0, angle_step)
+            elif key == b's':  # patrz w dół  
+                self.camera.rotate(0, -angle_step)
+            elif key == b'a':  # patrz w lewo
+                self.camera.rotate(-angle_step, 0)
+            elif key == b'd':  # patrz w prawo
+                self.camera.rotate(angle_step, 0)
+            # Zachowaj l/o do pan
+            elif key == b'l':  
+                self.camera.pan(0, step)
+            elif key == b'o':  
+                self.camera.pan(0, -step)
+            # NOWE: Q/E - orbitowanie poziomo, R/F - orbitowanie pionowo
+            elif key == b'q':  # orbituj w lewo
+                self.camera.orbit(-angle_step, 0)
+            elif key == b'e':  # orbituj w prawo
+                self.camera.orbit(angle_step, 0)
+            elif key == b'r':  # orbituj w górę
+                self.camera.orbit(0, -angle_step)
+            elif key == b'f':  # orbituj w dół
+                self.camera.orbit(0, angle_step)
+            # C - ustaw centrum orbitowania
+            elif key == b'c':  # ustaw centrum orbitowania na obecny target
+                self.camera.set_orbit_center()
+            # SPACJA - resetuj kamerę
+            elif key == b' ':  # resetuj kamerę
+                self.camera.reset_camera()
+
         glutPostRedisplay()
-    
+
+
+    def keyboard(self, key, x, y):
+        self.handle_key(key, special=False)
+
+    def special_keys(self, key, x, y):
+        self.handle_key(key, special=True)
+
     def run(self):
         glutInit(sys.argv)
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
         glutInitWindowSize(self.window_width, self.window_height)
         glutCreateWindow(b"Wizualizacja sceny 3D")
-        
         self.model.load_obj(self.obj_file)
-        self.model.center_scene()
-        self.setup_camera()
         self.init_lighting()
-        
         glutDisplayFunc(self.display)
         glutReshapeFunc(self.reshape)
-        glutKeyboardFunc(self.keyboard)
+        glutKeyboardFunc(self.keyboard)        # zwykłe klawisze
+        glutSpecialFunc(self.special_keys)     # klawisze specjalne
+        
+        # Wyświetl instrukcje sterowania
+        print("\n=== STEROWANIE ===")
+        print("WSAD - rozglądanie się")
+        print("Strzałki - przesuwanie/chodzenie")
+        print("L/O - przesuwanie w górę/dół")
+        print("Q/E - orbitowanie poziomo (lewo/prawo)")
+        print("R/F - orbitowanie pionowo (góra/dół)")
+        print("C - ustaw centrum orbitowania (tam gdzie patrzysz)")
+        print("SPACJA - resetuj kamerę do pozycji początkowej")
+        print("==================\n")
+        
         glutMainLoop()
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Użycie: python program.py <plik.obj>")
         sys.exit(1)
-    
     viewer = SceneViewer(sys.argv[1])
     viewer.run()
