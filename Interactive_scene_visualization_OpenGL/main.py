@@ -98,43 +98,39 @@ class Camera:
         d_theta - zmiana kąta azymutalnego (poziomo)
         d_phi - zmiana kąta polarnego (pionowo)
         """
+        current_view_dir = self.target - self.eye
+        current_distance_to_target = np.linalg.norm(current_view_dir)
+        current_view_dir = current_view_dir / current_distance_to_target
         
         # Wektor od orbit_center do eye
         to_eye = self.eye - self.orbit_center
         radius = np.linalg.norm(to_eye)
         
-        print(f"ORBIT: radius={radius}")
         
         if radius < 0.001:  # Unikaj dzielenia przez zero
             print("BŁĄD: Za mała odległość od centrum orbitowania!")
             return
+
         
         theta = math.atan2(to_eye[2], to_eye[0])
         phi = math.acos(np.clip(to_eye[1] / radius, -1.0, 1.0))
         
-        
-        # Aktualizuj kąty
-        theta += d_theta
+        theta -= d_theta 
         phi += d_phi
         
         # Ogranicz phi żeby nie przejść przez bieguny
         phi = np.clip(phi, 0.1, math.pi - 0.1)
         
-        # Konwertuj z powrotem do współrzędnych kartezjańskich
         x = radius * math.sin(phi) * math.cos(theta)
         y = radius * math.cos(phi)
         z = radius * math.sin(phi) * math.sin(theta)
         
-        # Ustaw nową pozycję kamery
         self.eye = self.orbit_center + np.array([x, y, z])
         
-        # Ustaw target tak żeby patrzeć na centrum orbitowania
-        self.target = self.orbit_center.copy()
+        # self.target = self.orbit_center.copy()
+        self.target = self.eye + current_distance_to_target * current_view_dir
         
-        # Przelicz kąty dla funkcji rotate
         self._calculate_initial_angles()
-        
-        print(f"ORBIT END: eye={self.eye}, target={self.target}")
 
     def reset_camera(self):
         self.eye = np.array([5.0, 5.0, 5.0])
@@ -347,14 +343,8 @@ class SceneViewer:
         glutCreateWindow(b"Wizualizacja sceny 3D")
         
         # Ładowanie modelu
-        print(f"Ładowanie modelu: {self.obj_file}")
         self.model.load_obj(self.obj_file)
-        print(f"Załadowano {len(self.model.vertices)} wierzchołków")
-        print(f"Załadowano {len(self.model.faces)} ścian")
-        print(f"Załadowano {len(self.model.materials)} materiałów:")
-        for name, material in self.model.materials.items():
-            print(f"  {name}: Ka={material.Ka}, Kd={material.Kd}")
-        
+
         self.init_lighting()
         glutDisplayFunc(self.display)
         glutReshapeFunc(self.reshape)
