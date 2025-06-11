@@ -60,7 +60,6 @@ class Camera:
         
 
     def rotate(self, d_yaw, d_pitch):
-        print(f"ROTATE: eye={self.eye}, target={self.target}")
         
         # Aktualizuj kąty
         self.yaw += d_yaw
@@ -92,15 +91,13 @@ class Camera:
             current_distance = 5.0  # domyślna odległość
         
         self.target = self.eye + current_distance * view_dir
-        print(f"ROTATE RESULT: eye={self.eye}, target={self.target}, distance={current_distance}")
 
     def orbit(self, d_theta, d_phi):
         """
-        Orbituje kamerę wokół punktu orbit_center.
+        Orbituje kamerą wokół punktu orbit_center.
         d_theta - zmiana kąta azymutalnego (poziomo)
         d_phi - zmiana kąta polarnego (pionowo)
         """
-        print(f"ORBIT START: eye={self.eye}, center={self.orbit_center}")
         
         # Wektor od orbit_center do eye
         to_eye = self.eye - self.orbit_center
@@ -111,15 +108,10 @@ class Camera:
         if radius < 0.001:  # Unikaj dzielenia przez zero
             print("BŁĄD: Za mała odległość od centrum orbitowania!")
             return
-            
-        # Konwertuj do współrzędnych sferycznych
-        # theta - kąt w płaszczyźnie XZ (azymut)
-        # phi - kąt od osi Y (wysokość)
         
         theta = math.atan2(to_eye[2], to_eye[0])
         phi = math.acos(np.clip(to_eye[1] / radius, -1.0, 1.0))
         
-        print(f"ORBIT: theta={math.degrees(theta):.1f}°, phi={math.degrees(phi):.1f}°")
         
         # Aktualizuj kąty
         theta += d_theta
@@ -145,25 +137,18 @@ class Camera:
         print(f"ORBIT END: eye={self.eye}, target={self.target}")
 
     def reset_camera(self):
-        """Resetuj kamerę do pozycji początkowej"""
-        print("RESETOWANIE KAMERY")
         self.eye = np.array([5.0, 5.0, 5.0])
         self.target = np.array([0.0, 0.0, 0.0])
         self.orbit_center = np.array([0.0, 0.0, 0.0])
         self.up = np.array([0.0, 1.0, 0.0])
         self._calculate_initial_angles()
-        print(f"RESET: eye={self.eye}, target={self.target}")
 
     def set_orbit_center(self, center=None):
-        """
-        Ustaw punkt wokół którego chcemy orbitować.
-        Jeśli center=None, użyj obecnego target jako centrum.
-        """
         if center is None:
             self.orbit_center = self.target.copy()
         else:
             self.orbit_center = np.array(center)
-        print(f"ORBIT CENTER ustawione na: {self.orbit_center}")
+
         
 
 class Material:
@@ -244,6 +229,12 @@ class Model:
                     glMaterialfv(GL_FRONT, GL_DIFFUSE, material.Kd)
                     glMaterialfv(GL_FRONT, GL_SPECULAR, material.Ks)
                     glMaterialf(GL_FRONT, GL_SHININESS, min(material.Ns, 128.0))
+                else:
+                    # Ustaw domyślny materiał gdy brak materiału
+                    glMaterialfv(GL_FRONT, GL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
+                    glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
+                    glMaterialfv(GL_FRONT, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+                    glMaterialf(GL_FRONT, GL_SHININESS, 32.0)
                 last_material = material
             glBegin(GL_POLYGON)
             for v_idx, n_idx in face_verts:
@@ -261,15 +252,23 @@ class SceneViewer:
         self.window_height = 600
 
     def init_lighting(self):
+        # Oświetlenie
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
-        glLightfv(GL_LIGHT0, GL_POSITION, [0, 10, 10, 1])
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1, 1])
-        glLightfv(GL_LIGHT0, GL_SPECULAR, [1, 1, 1, 1])
-        glEnable(GL_COLOR_MATERIAL)
-        glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
+        
+        # Pozycja światła - dalej od obiektów
+        glLightfv(GL_LIGHT0, GL_POSITION, [10.0, 10.0, 10.0, 1.0])
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+        glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+        glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
+
+        # Inne ustawienia
         glEnable(GL_DEPTH_TEST)
         glShadeModel(GL_SMOOTH)
+        glEnable(GL_NORMALIZE)  # Automatyczna normalizacja normalnych
+        
+        # Ustawienie domyślnego koloru tła
+        glClearColor(0.1, 0.1, 0.1, 1.0)
 
     def display(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -346,7 +345,16 @@ class SceneViewer:
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
         glutInitWindowSize(self.window_width, self.window_height)
         glutCreateWindow(b"Wizualizacja sceny 3D")
+        
+        # Ładowanie modelu
+        print(f"Ładowanie modelu: {self.obj_file}")
         self.model.load_obj(self.obj_file)
+        print(f"Załadowano {len(self.model.vertices)} wierzchołków")
+        print(f"Załadowano {len(self.model.faces)} ścian")
+        print(f"Załadowano {len(self.model.materials)} materiałów:")
+        for name, material in self.model.materials.items():
+            print(f"  {name}: Ka={material.Ka}, Kd={material.Kd}")
+        
         self.init_lighting()
         glutDisplayFunc(self.display)
         glutReshapeFunc(self.reshape)
