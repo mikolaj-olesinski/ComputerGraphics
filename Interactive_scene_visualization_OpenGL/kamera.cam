@@ -1,0 +1,12 @@
+# Pozycja obserwatora (x y z)
+8.0 6.0 10.0
+# Pozycja punktu target (x y z)
+0.0 0.0 0.0
+# Rozdzielczość obrazu (xres yres)
+800 600
+# Pozycja górnego lewego wierzchołka obrazu (x y z)
+-3.2 2.4 -2.0
+# Wektor dU - przesunięcie między pikselami w wierszu (x y z)
+0.008 0.0 0.0
+# Wektor dV - przesunięcie między pikselami w kolumnie (x y z)
+0.0 -0.008 0.0

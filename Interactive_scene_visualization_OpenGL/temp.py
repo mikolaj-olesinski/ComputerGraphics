@@ -5,33 +5,81 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-
-import numpy as np
-import math
-from OpenGL.GL import *
-from OpenGL.GLU import *
-
 class Camera:
     def __init__(self):
         self.eye = np.array([5.0, 5.0, 5.0])
         self.target = np.array([0.0, 0.0, 0.0])
         self.up = np.array([0.0, 1.0, 0.0])
         
-        # Punkt wokół którego orbitujemy (niezależny od target)
         self.orbit_center = np.array([0.0, 0.0, 0.0])
         
-        # Oblicz początkowe kąty z obecnej pozycji
+        self.cam_params = None
+        
         self._calculate_initial_angles()
 
     def _calculate_initial_angles(self):
         view_dir = self.target - self.eye
         view_dir = view_dir / np.linalg.norm(view_dir)
         
-        # Yaw (obrót wokół osi Y) - kąt w płaszczyźnie XZ
         self.yaw = math.atan2(view_dir[2], view_dir[0])
         
-        # Pitch (obrót wokół osi X) - kąt w pionie
         self.pitch = math.asin(np.clip(view_dir[1], -1.0, 1.0))
+
+    def load_cam_file(self, filename):
+        """Wczytuje parametry kamery z pliku .cam"""
+        with open(filename, 'r') as f:
+            lines = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+        
+        eye_data = list(map(float, lines[0].split()))
+        target_data = list(map(float, lines[1].split()))
+        resolution_data = list(map(int, lines[2].split()))
+        top_left_data = list(map(float, lines[3].split()))
+        du_data = list(map(float, lines[4].split()))
+        dv_data = list(map(float, lines[5].split()))
+        
+        self.cam_params = {
+            'resolution': (resolution_data[0], resolution_data[1]),
+            'top_left': np.array(top_left_data),
+            'du': np.array(du_data),
+            'dv': np.array(dv_data)
+        }
+        
+        self._convert_cam_to_opengl(
+            np.array(eye_data), np.array(target_data),
+            np.array(top_left_data), np.array(du_data), np.array(dv_data)
+        )
+
+    def _convert_cam_to_opengl(self, eye_pos, target_pos, top_left, du, dv):
+        self.eye = eye_pos
+        self.target = target_pos
+        
+        du_norm = du / np.linalg.norm(du)
+        dv_norm = dv / np.linalg.norm(dv)
+        
+        up_candidate = np.cross(dv_norm, du_norm)
+        up_candidate = up_candidate / np.linalg.norm(up_candidate)
+        
+        if up_candidate[1] < 0:
+            up_candidate = -up_candidate
+        
+        self.up = up_candidate
+        
+        self.orbit_center = self.target.copy()
+        self._calculate_initial_angles()
+        
+        print(f"  du_norm: {du_norm}")
+        print(f"  dv_norm: {dv_norm}")
+        print(f"  up obliczone: {self.up}")
+
+    def get_cam_info(self):
+        if self.cam_params:
+            return (
+                f"Rozdzielczość: {self.cam_params['resolution'][0]}x{self.cam_params['resolution'][1]}\n"
+                f"Górny lewy róg: {self.cam_params['top_left']}\n"
+                f"Wektor dU: {self.cam_params['du']}\n"
+                f"Wektor dV: {self.cam_params['dv']}"
+            )
+        return "Brak parametrów"
 
     def look_at(self):
         gluLookAt(*self.eye, *self.target, *self.up)
@@ -127,8 +175,8 @@ class Camera:
         
         self.eye = self.orbit_center + np.array([x, y, z])
         
-        # self.target = self.orbit_center.copy()
-        self.target = self.eye + current_distance_to_target * current_view_dir
+        self.target = self.orbit_center.copy()
+        # self.target = self.eye + current_distance_to_target * current_view_dir
         
         self._calculate_initial_angles()
 
@@ -137,6 +185,7 @@ class Camera:
         self.target = np.array([0.0, 0.0, 0.0])
         self.orbit_center = np.array([0.0, 0.0, 0.0])
         self.up = np.array([0.0, 1.0, 0.0])
+        self.cam_params = None
         self._calculate_initial_angles()
 
     def set_orbit_center(self, center=None):
@@ -150,11 +199,93 @@ class Camera:
 class Material:
     def __init__(self, name):
         self.name = name
-        self.Ka = np.array([0.2, 0.2, 0.2])
-        self.Kd = np.array([0.8, 0.8, 0.8])
-        self.Ks = np.array([1.0, 1.0, 1.0])
-        self.Ns = 32.0
-        self.d = 1.0
+        
+        # Podstawowe parametry materiału (już masz)
+        self.Ka = np.array([0.2, 0.2, 0.2])  # ambient
+        self.Kd = np.array([0.8, 0.8, 0.8])  # diffuse
+        self.Ks = np.array([1.0, 1.0, 1.0])  # specular
+        self.Ns = 32.0                       # shininess/specular exponent
+        self.d = 1.0                         # dissolve (transparency)
+        
+        # Dodatkowe parametry MTL
+        self.Ke = np.array([0.0, 0.0, 0.0])  # emissive
+        self.Ni = 1.0                        # optical density (index of refraction)
+        self.illum = 2                       # illumination model
+        self.Tr = 0.0                        # transparency (alternative to d)
+        
+        # Mapowania tekstur - ścieżki do plików
+        self.map_Ka = None    # ambient texture map
+        self.map_Kd = None    # diffuse texture map  
+        self.map_Ks = None    # specular texture map
+        self.map_Ke = None    # emissive texture map
+        self.map_Ns = None    # shininess texture map
+        self.map_d = None     # alpha texture map
+        self.map_bump = None  # bump map
+        self.bump = None      # bump map (alternatywna nazwa)
+        self.disp = None      # displacement map
+        self.decal = None     # decal map
+        self.refl = None      # reflection map
+        
+        # Ścieżka do katalogu z materiałami (potrzebna do tekstur)
+        self.material_dir = ""
+
+    def calculate_average_color_from_texture(self, texture_path):
+        """
+        Wczytuje obraz tekstury i oblicza jego średni kolor.
+        Zwraca kolor jako numpy array [R, G, B] w zakresie 0-1.
+        """
+        try:
+            # Pełna ścieżka do tekstury
+            full_path = os.path.join(self.material_dir, texture_path)
+            
+            # Sprawdź czy plik istnieje
+            if not os.path.exists(full_path):
+                print(f"Ostrzeżenie: Nie znaleziono tekstury: {full_path}")
+                return None
+            
+            # Wczytaj obraz
+            with Image.open(full_path) as img:
+                # Konwertuj do RGB jeśli potrzeba
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Konwertuj do numpy array
+                img_array = np.array(img)
+                
+                # Oblicz średni kolor (średnia po wszystkich pikselach dla każdego kanału)
+                avg_color = np.mean(img_array, axis=(0, 1))
+                
+                # Przekonwertuj z zakresu 0-255 do 0-1
+                avg_color = avg_color / 255.0
+                
+                print(f"Średni kolor tekstury {texture_path}: RGB({avg_color[0]:.3f}, {avg_color[1]:.3f}, {avg_color[2]:.3f})")
+                return avg_color
+                
+        except Exception as e:
+            print(f"Błąd przy wczytywaniu tekstury {texture_path}: {e}")
+            return None
+
+    def apply_texture_as_color(self):
+        """
+        Zastępuje parametr Kd średnim kolorem z tekstury diffuse (map_Kd).
+        Wywołuje się to po wczytaniu wszystkich parametrów materiału.
+        """
+        if self.map_Kd:
+            avg_color = self.calculate_average_color_from_texture(self.map_Kd)
+            if avg_color is not None:
+                self.Kd = avg_color
+                print(f"Materiał '{self.name}': Zastąpiono Kd średnim kolorem tekstury")
+        
+        # Opcjonalnie możesz też zastąpić inne parametry średnimi kolorami z odpowiednich tekstur
+        if self.map_Ka:
+            avg_color = self.calculate_average_color_from_texture(self.map_Ka)
+            if avg_color is not None:
+                self.Ka = avg_color
+                
+        if self.map_Ks:
+            avg_color = self.calculate_average_color_from_texture(self.map_Ks)
+            if avg_color is not None:
+                self.Ks = avg_color
 
 class Model:
     def __init__(self):
@@ -165,27 +296,78 @@ class Model:
         self.current_material = None
 
     def load_mtl(self, filename):
+        """Wczytuje plik materiałów MTL z pełną obsługą wszystkich parametrów"""
         current_mtl = None
+        material_dir = os.path.dirname(filename)  # Katalog z plikiem MTL
+        
         try:
             with open(filename, 'r') as f:
                 for line in f:
                     tokens = line.strip().split()
                     if not tokens or tokens[0].startswith('#'):
                         continue
+                    
                     if tokens[0] == 'newmtl':
+                        # Jeśli kończymy poprzedni materiał, zastosuj tekstury jako kolory
+                        if current_mtl:
+                            current_mtl.apply_texture_as_color()
+                        
+                        # Twórz nowy materiał
                         current_mtl = Material(tokens[1])
+                        current_mtl.material_dir = material_dir
                         self.materials[tokens[1]] = current_mtl
+                        
                     elif current_mtl:
+                        # Podstawowe kolory
                         if tokens[0] == 'Ka':
                             current_mtl.Ka = np.array(list(map(float, tokens[1:4])))
                         elif tokens[0] == 'Kd':
                             current_mtl.Kd = np.array(list(map(float, tokens[1:4])))
                         elif tokens[0] == 'Ks':
                             current_mtl.Ks = np.array(list(map(float, tokens[1:4])))
+                        elif tokens[0] == 'Ke':
+                            current_mtl.Ke = np.array(list(map(float, tokens[1:4])))
+                        
+                        # Parametry liczbowe
                         elif tokens[0] == 'Ns':
                             current_mtl.Ns = float(tokens[1])
                         elif tokens[0] == 'd':
                             current_mtl.d = float(tokens[1])
+                        elif tokens[0] == 'Tr':
+                            current_mtl.Tr = float(tokens[1])
+                            # Tr to alternatywa dla d: d = 1 - Tr
+                            current_mtl.d = 1.0 - current_mtl.Tr
+                        elif tokens[0] == 'Ni':
+                            current_mtl.Ni = float(tokens[1])
+                        elif tokens[0] == 'illum':
+                            current_mtl.illum = int(tokens[1])
+                        
+                        # Mapowania tekstur
+                        elif tokens[0] == 'map_Ka':
+                            current_mtl.map_Ka = ' '.join(tokens[1:])  # Może być ścieżka ze spacjami
+                        elif tokens[0] == 'map_Kd':
+                            current_mtl.map_Kd = ' '.join(tokens[1:])
+                        elif tokens[0] == 'map_Ks':
+                            current_mtl.map_Ks = ' '.join(tokens[1:])
+                        elif tokens[0] == 'map_Ke':
+                            current_mtl.map_Ke = ' '.join(tokens[1:])
+                        elif tokens[0] == 'map_Ns':
+                            current_mtl.map_Ns = ' '.join(tokens[1:])
+                        elif tokens[0] == 'map_d':
+                            current_mtl.map_d = ' '.join(tokens[1:])
+                        elif tokens[0] == 'map_bump' or tokens[0] == 'bump':
+                            current_mtl.map_bump = ' '.join(tokens[1:])
+                        elif tokens[0] == 'disp':
+                            current_mtl.disp = ' '.join(tokens[1:])
+                        elif tokens[0] == 'decal':
+                            current_mtl.decal = ' '.join(tokens[1:])
+                        elif tokens[0] == 'refl':
+                            current_mtl.refl = ' '.join(tokens[1:])
+            
+            # Nie zapomnij zastosować tekstur dla ostatniego materiału
+            if current_mtl:
+                current_mtl.apply_texture_as_color()
+                
         except Exception as e:
             print(f"Błąd wczytywania MTL: {e}")
 
@@ -240,8 +422,9 @@ class Model:
             glEnd()
 
 class SceneViewer:
-    def __init__(self, obj_file):
+    def __init__(self, obj_file, cam_file=None):
         self.obj_file = obj_file
+        self.cam_file = cam_file
         self.model = Model()
         self.camera = Camera()
         self.window_width = 800
@@ -308,10 +491,9 @@ class SceneViewer:
                 self.camera.rotate(angle_step, 0)
             # Zachowaj l/o do pan
             elif key == b'l':  
-                self.camera.pan(0, step)
-            elif key == b'o':  
                 self.camera.pan(0, -step)
-            # NOWE: Q/E - orbitowanie poziomo, R/F - orbitowanie pionowo
+            elif key == b'o':  
+                self.camera.pan(0, step)
             elif key == b'q':  # orbituj w lewo
                 self.camera.orbit(-angle_step, 0)
             elif key == b'e':  # orbituj w prawo
@@ -326,6 +508,15 @@ class SceneViewer:
             # SPACJA - resetuj kamerę
             elif key == b' ':  # resetuj kamerę
                 self.camera.reset_camera()
+            # I - wyświetl informacje o parametrach RT
+            elif key == b'i':
+                print("\n=== INFORMACJE O KAMERZE ===")
+                print(f"Eye: {self.camera.eye}")
+                print(f"Target: {self.camera.target}")
+                print(f"Up: {self.camera.up}")
+                print(f"Orbit center: {self.camera.orbit_center}")
+                print(self.camera.get_cam_info())
+                print("============================\n")
 
         glutPostRedisplay()
 
@@ -344,6 +535,13 @@ class SceneViewer:
         
         # Ładowanie modelu
         self.model.load_obj(self.obj_file)
+        
+        # Ładowanie parametrów kamery jeśli podano plik .cam
+        if self.cam_file:
+            self.camera.load_cam_file(self.cam_file)
+            if self.camera.cam_params and 'resolution' in self.camera.cam_params:
+                self.window_width, self.window_height = self.camera.cam_params['resolution']
+                print(f"Ustawiam rozdzielczość z pliku .cam: {self.window_width}x{self.window_height}")
 
         self.init_lighting()
         glutDisplayFunc(self.display)
@@ -359,6 +557,7 @@ class SceneViewer:
         print("Q/E - orbitowanie poziomo (lewo/prawo)")
         print("R/F - orbitowanie pionowo (góra/dół)")
         print("C - ustaw centrum orbitowania (tam gdzie patrzysz)")
+        print("I - wyświetl informacje o kamerze")
         print("SPACJA - resetuj kamerę do pozycji początkowej")
         print("==================\n")
         
@@ -366,7 +565,11 @@ class SceneViewer:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Użycie: python program.py <plik.obj>")
+        print("Użycie: python program.py <plik.obj> [plik.cam]")
         sys.exit(1)
-    viewer = SceneViewer(sys.argv[1])
+    
+    obj_file = sys.argv[1]
+    cam_file = sys.argv[2] if len(sys.argv) > 2 else None
+    
+    viewer = SceneViewer(obj_file, cam_file)
     viewer.run()
