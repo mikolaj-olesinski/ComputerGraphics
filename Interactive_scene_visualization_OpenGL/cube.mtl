@@ -3,3 +3,15 @@ Ka 0.1 0.0 0.0
 Kd 0.8 0.0 0.0
 Ks 1.0 1.0 1.0
 Ns 100.0
+
+newmtl material_green
+Ka 0.0 0.1 0.0
+Kd 0.0 0.8 0.0
+Ks 1.0 1.0 1.0
+Ns 100.0
+
+newmtl material_blue
+Ka 0.0 0.0 0.1
+Kd 0.0 0.0 0.8
+Ks 1.0 1.0 1.0
+Ns 100.0

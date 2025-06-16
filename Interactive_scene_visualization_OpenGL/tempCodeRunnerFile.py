@@ -1,0 +1,1 @@
+lf.pitch = math.asin(np.clip(view_dir[1], -1.0, 1.0))

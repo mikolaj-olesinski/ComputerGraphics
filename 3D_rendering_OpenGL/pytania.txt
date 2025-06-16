@@ -1,0 +1,6 @@
+jak dokladnie dziala ten push matrix (co to dokladnie robi) jak to działa a nie tylko ze przesuwa zeby potem dzialalo
+co jak sie wylaczy ten lightning 
+o ta interpolacje, cieniowanie,
+o trojkaty itd
+model view/perspecitve
+jaka jest macierz przed rysowaniem

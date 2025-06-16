@@ -7,10 +7,14 @@ from OpenGL.GLUT import *
 camera_angle = 0.0
 camera_radius = 12.0
 camera_height = 8.0
+pawn_height = 0.5
+is_falling = False
+row_num = 0
 
 def ogl_configure():
     glEnable(GL_DEPTH_TEST)
-    glEnable(GL_LIGHTING)
+    # glEnable(GL_LIGHTING)
+    glDisable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
     glEnable(GL_LIGHT1)
 
@@ -44,7 +48,7 @@ def set_camera():
 def set_material_light_square():
     color = [0.8, 0.8, 0.6, 1.0] 
     specular = [0.0, 0.0, 0.0, 1.0] 
-    shininess = 100.0
+    shininess = 0.0
     
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color)
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color)
@@ -96,41 +100,46 @@ def draw_chessboard():
                 set_material_dark_square()
             
             glutSolidCube(1.0)
-            #glutSolidTeapot(1.0)
             glPopMatrix()
         glPopMatrix()
 
 
 def draw_single_pawn():
+
     glPushMatrix()
     glScalef(0.8, 0.2, 0.8)
-    glutSolidSphere(0.5, 32, 32)
+    glutSolidSphere(0.5, 64, 64)
     glPopMatrix()
 
     glPushMatrix()
     glTranslatef(0, 0.3, 0)
     glScalef(0.5, 0.6, 0.5)
-    glutSolidSphere(0.4, 32, 32)
+    glutSolidSphere(0.4, 64, 64)
     glPopMatrix()
 
     glPushMatrix()
     glTranslatef(0, 0.7, 0)
-    glutSolidSphere(0.2, 32, 32)
+    glutSolidSphere(0.2, 64, 64)
     glPopMatrix()
 
 def draw_pawns():
+    global pawn_height, row_num
     for i in [0, 1, 6, 7]:
         for j in range(8):
             glPushMatrix()
             x = i - 3.5
             z = j - 3.5
-            glTranslatef(x, 0.5, z)
+            if row_num == j:
+                glTranslatef(x, pawn_height, z)
+            else:
+                glTranslatef(x, 0.5, z)
             
             if i in [0, 1]:  
                 set_material_dark_pawn()  
             else:
                 set_material_light_pawn() 
             
+
             draw_single_pawn()
             glPopMatrix()
 
@@ -149,11 +158,25 @@ def draw_scene():
     glutSwapBuffers()
 
 def animate_scene():
-    global camera_angle
+    global camera_angle, pawn_height, is_falling, row_num
     
     camera_angle += 0.01
     if camera_angle >= 2 * math.pi:
         camera_angle -= 2 * math.pi
+
+
+    if is_falling:
+        pawn_height -= 0.05
+        if pawn_height <= 0.5:
+            is_falling = False
+            row_num += 1
+            if row_num > 7:
+                row_num = 0
+    else:
+        pawn_height += 0.05
+        if pawn_height >= 1.0:
+            is_falling = True
+
     
     glutPostRedisplay()
 
@@ -174,7 +197,7 @@ def init_glut(argv):
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
     glutInitWindowSize(800, 600)
     glutInitWindowPosition(100, 100)
-    glutCreateWindow("Szachownica 3D - Reczne Materialy")
+    glutCreateWindow("Szachownica 3D")
     
     glutDisplayFunc(draw_scene)
     glutReshapeFunc(reshape_callback)
