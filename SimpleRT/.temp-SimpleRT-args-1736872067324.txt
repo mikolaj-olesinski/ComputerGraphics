@@ -1,0 +1,13 @@
+-Dfile.encoding=windows-1250
+-Dstdout.encoding=windows-1250
+-Dstderr.encoding=windows-1250
+-classpath
+"D:\\CG_Java\\SimpleRT\\bin"
+-XX:+ShowCodeDetailsInExceptionMessages
+SimpleRT
+"d:\\Sceny3D\\scena4.scn"
+70
+70
+120
+0.0
+0
