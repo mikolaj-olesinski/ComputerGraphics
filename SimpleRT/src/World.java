@@ -6,9 +6,9 @@ import java.util.ArrayList;
 public class World 
 {    
    // Scene description
-   public  Point3D        vertices[];
-   public  ArrayList<Integer> adj_triangles[];   
-   public  Shape3D        shapes[];
+   public  Point3D        vertices[]; //Tablica wszystkich wierzechołków
+   public  ArrayList<Integer> adj_triangles[];   //Tablica wszystkich trójkątów, do których należy dany wierzchołek np. adj_triangles[0] = {0, 1, 2} oznacza, że wierzchołek 0 należy do trójkątów 0, 1 i 2
+   public  Shape3D        shapes[]; //Tablica wszystkich ksztaltów 3D np. shapes[0] =Triangle(vertices[0], vertices[1], vertices[2], materials[0], 0) oznacza, że pierwszy kształt to trójkąt zbudowany z wierzchołków 0, 1 i 2, z materiałem 0 i częścią 0
    public  Light          lights[];
    public  int            parts[];
    public  MatAttr        materials[];

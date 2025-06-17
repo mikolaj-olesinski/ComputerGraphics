@@ -1,0 +1,549 @@
+
+// punkty
+points_count 32
+-4.2578 -1.175294 -2.951684
+2.42502 -1.175294 -4.7049
+5.907733 -1.175294 1.091287
+-0.775087 -1.175294 2.844509
+-4.2578 1.272252 -2.951684
+2.42502 1.272252 -4.7049
+5.907733 1.272252 1.091287
+-0.775087 1.272252 2.844509
+1.787404 -0.7265136 0.8692604
+1.787404 9.065618 0.8692604
+-3.108671 -0.7265136 -4.026821
+-3.108671 9.065618 -4.026821
+1.787404 -0.7265136 -8.922878
+1.787404 9.065618 -8.922878
+6.683461 -0.7265136 -4.026821
+6.683461 9.065618 -4.026821
+1.787404 -0.7265136 -4.026821
+1.787404 9.065618 -4.026821
+5.269194 -0.8995253 2.03092
+5.269194 0.8995253 2.03092
+4.369669 -0.8995253 1.131397
+4.369669 0.8995253 1.131397
+5.269194 -0.8995253 0.231868
+5.269194 0.8995253 0.231868
+6.168722 -0.8995253 1.131397
+6.168722 0.8995253 1.131397
+5.269194 -0.8995253 1.131397
+5.269194 0.8995253 1.131397
+-8.550423 0 -7.53004
+7.826767 0 -7.53004
+-8.550423 0 8.847159
+7.826767 0 8.847159
+
+
+// trójkąty
+triangles_count 46
+4 5 7
+6 7 5
+0 1 4
+5 4 1
+1 2 5
+6 5 2
+2 3 6
+7 6 3
+3 0 7
+4 7 0
+1 0 2
+3 2 0
+9 11 17
+10 8 16
+11 13 17
+12 10 16
+13 15 17
+14 12 16
+15 9 17
+8 14 16
+8 10 9
+10 11 9
+10 12 11
+12 13 11
+12 14 13
+14 15 13
+14 8 15
+8 9 15
+19 21 27
+20 18 26
+21 23 27
+22 20 26
+23 25 27
+24 22 26
+25 19 27
+18 24 26
+18 20 19
+20 21 19
+20 22 21
+22 23 21
+22 24 23
+24 25 23
+24 18 25
+18 19 25
+28 29 31
+31 30 28
+
+
+// części
+parts_count 4
+0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 
+
+
+// materiały
+materials_count 23
+
+mat_name mat1
+rgb 0.6 0.6 0.6
+kdCr 1
+kdCg 1
+kdCb 1
+ksCr 0
+ksCg 0
+ksCb 0
+krCr 0
+krCg 0
+krCb 0
+kaCr 0
+kaCg 0
+kaCb 0
+g 100
+n 1
+
+mat_name rr2
+rgb 0.7921569 0.7607843 0.3490196
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 523
+rgb 0.254902 0.2431373 0
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 42341
+rgb 0 0 0
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 634
+rgb 0.04705882 0.1058824 0.1294118
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 3r25235
+rgb 0.04705882 0.03921569 0.02352941
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 42
+rgb 0.1803922 0.2156863 0.9960784
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 542623
+rgb 0.1803922 0.2156863 0.4901961
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 325623
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 352626
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4094
+
+mat_name 65436737
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 4.0268
+
+mat_name 3532523
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 10
+
+mat_name 5325325
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.4765
+
+mat_name 5325
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0.2684
+
+mat_name 532523523
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4631
+ksCr 0.3155
+ksCg 0.3423
+ksCb 0.0201
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0.7697
+
+mat_name 64363
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0.971
+
+mat_name 532523
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 1.1723
+
+mat_name 9876
+rgb 0.1803922 0.2156863 0.3372549
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0
+
+mat_name twt
+rgb 1 0 0
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0
+
+mat_name 2424
+rgb 1 0 0
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0
+
+mat_name 3251351
+rgb 1 0 0
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0
+
+mat_name 42141
+rgb 0.01176471 0.6509804 0
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0
+
+mat_name 21512
+rgb 0.3686275 0.6509804 0.8470588
+kdCr 0.4362
+kdCg 0.3021
+kdCb 0.4967
+ksCr 0.4564
+ksCg 0.1879
+ksCb 0.4765
+krCr 1
+krCg 1
+krCb 1
+kaCr 0
+kaCg 0
+kaCb 0
+g 810
+n 0
+
+
+// przypisanie materiałów
+0 532523
+1 2424
+2 42141
+3 21512
+
+
+// światła
+lights_count 1
+
+light_name default
+enabled 1
+light_type point
+rgb 0.2684 0.2147 0.1574
+power 90
+pos 2.253802 1.745246 0.558441
+dir 1 0 0
+inner_angle 105
+outer_angle 180
+gonio_count 2
+0 1
+180 1
+
+
+// kamery
+cams_count 1
+active 0
+
+cam_name Cam1
+resolution 800 600
+pos 4.9 2 5
+lookAt 3.7 1.5 3.5
+fov 129.1151
+rotation 0
+
+
+// hierarchia
+node_count 5
+
+hier_type Mesh
+hier_name Szescian
+triangle_count 12
+0 1 2 3 4 5 6 7 8 9 10 11 
+
+hier_type Light
+hier_name default
+light_index 0
+
+hier_type Mesh
+hier_name Walec
+triangle_count 16
+12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 
+
+hier_type Mesh
+hier_name Walec
+triangle_count 16
+28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 
+
+hier_type Mesh
+hier_name Kwadrat
+triangle_count 2
+44 45 
