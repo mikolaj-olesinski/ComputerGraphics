@@ -424,7 +424,6 @@ public class World
             }
 
          } else {
-            // ŚWIATŁO PUNKTOWE - dokładnie ten sam kod co wcześniej
             // Test shadowing
             shadow_ray.P.x = shadow_ray_origin.x;
             shadow_ray.P.y = shadow_ray_origin.y;
