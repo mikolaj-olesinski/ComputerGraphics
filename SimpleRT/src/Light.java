@@ -3,7 +3,7 @@ import java.util.Scanner;
 
 public class Light 
 {
-   public enum LightType  { POINT_LT, CONE_LT };
+   public enum LightType { POINT_LT, CONE_LT, SPHERE_LT };
    
    public String    name;
    public boolean   enabled;
@@ -15,6 +15,7 @@ public class Light
    public double    inner_angle;
    public double    outer_angle;
    public double    gonio[][];
+   public double radius = 0.0;
    
    public void ReadFromFile( Scanner s )
    {     
@@ -64,6 +65,14 @@ public class Light
       {
          gonio[i][0] = s.nextDouble();
          gonio[i][1] = s.nextDouble();
-      }            
+      }
+
+      if (s.hasNext("radius")) {
+         s.next();
+         radius = s.nextDouble();
+         if (radius > 0) {
+            type = LightType.SPHERE_LT;
+         }
+      }
    }
 }

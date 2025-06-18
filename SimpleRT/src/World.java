@@ -10,7 +10,7 @@ public class World
    public  ArrayList<Integer> adj_triangles[];   //Tablica wszystkich trójkątów, do których należy dany wierzchołek np. adj_triangles[0] = {0, 1, 2} oznacza, że wierzchołek 0 należy do trójkątów 0, 1 i 2
    public  Shape3D        shapes[]; //Tablica wszystkich ksztaltów 3D np. shapes[0] =Triangle(vertices[0], vertices[1], vertices[2], materials[0], 0) oznacza, że pierwszy kształt to trójkąt zbudowany z wierzchołków 0, 1 i 2, z materiałem 0 i częścią 0
    public  Light          lights[];
-   public  int            parts[];
+   public  int            parts[];  //Mapowanie jaki obiekt ma jaki materiał np. parts[0] = 1 oznacza, że pierwszy trójkąt ma materiał 1
    public  MatAttr        materials[];
    public  RTObserver     cams[];
    public  RTObserver     camera;
@@ -25,6 +25,7 @@ public class World
    
    private static int     MIN_SUPERSAMPLES = 10;
    private static double  COLOR_SMALL_FRACT = 0.2;
+   private static int SHADOW_SAMPLES = 16;
    
    // Statistics
    private long           prim_cnt       = 0;
@@ -122,7 +123,12 @@ public class World
       int            supersamples_sqr = supersamples * supersamples;
       double         x_ray; 
       double         y_ray;
-      double         recip_ss = 1.0/(supersamples+1);
+//      double         recip_ss = 1.0/(supersamples+1); // Błąd????
+      double recip_ss = 0.0;
+
+      if (supersamples > 0) {
+         recip_ss = 1.0 / supersamples;
+      }
       
       // Request the resolution of the active camera
       x_res = camera.x_res;
@@ -180,7 +186,7 @@ public class World
                      camera.SetRayParam(x_ray, y_ray, primary_ray);       
                      primary_ray.Update();                
                      int_shape = RayColor( primary_ray, 0, null );
-                     
+
                      ray_color.r += ray_colors[0].r;
                      ray_color.g += ray_colors[0].g;
                      ray_color.b += ray_colors[0].b;                     
@@ -353,49 +359,116 @@ public class World
       // Object hit - compute diffused light
       for ( int l = 0; l < lights.length; l++ )
       {
-         // Test shadowing
-         shadow_ray.P.x = shadow_ray_origin.x;
-         shadow_ray.P.y = shadow_ray_origin.y;
-         shadow_ray.P.z = shadow_ray_origin.z;       
-         
-         //int_point.CopyTo( shadow_ray.P );
-         shadow_ray.u.FromPoints( lights[l].position, int_point );
-         
-         // if the light on the opposite side than observer - skip the light, 
-         // the only exception is the transparent-difuse surface which can be illuminated from
-         // both sides
-         if ( ( n.DotProduct( shadow_ray.u ) <= 0.0 ) &&  !materials[mat_index].is_transparent )
-            continue;         
-         
-         shadow_ray.t_max = dist_to_light = shadow_ray.u.GetLength();
-         shadow_ray.t_min = RTUtils.EPS;
-         shadow_ray.t_int = RTUtils.INFINITY;
-         shadow_ray.u.Normalize();         
-         shadow_ray.Update();
-         
-         attenuation.r = attenuation.g = attenuation.b = 1.0f;
-         if ( FindLightAttenuation( shadow_ray, attenuation, int_object ) )      
-         {
-            double dist_clipped = Math.max( 0.3, dist_to_light );
-            
-            // Light arrives to the observed point
-            double dist_att = lights[l].E * Math.abs( shadow_ray.u.DotProduct( n ))  / dist_clipped;
-            rf += dist_att * attenuation.r * lights[l].rgb.r * materials[mat_index].kdIr;
-            gf += dist_att * attenuation.g * lights[l].rgb.g * materials[mat_index].kdIg;
-            bf += dist_att * attenuation.b * lights[l].rgb.b * materials[mat_index].kdIb;  
-            
-            if ( materials[mat_index].is_specular_refl )
+         if (lights[l].type == Light.LightType.SPHERE_LT && lights[l].radius > 0) {
+            double total_rf = 0.0, total_gf = 0.0, total_bf = 0.0;
+            int successful_samples = 0;
+
+            for (int sample = 0; sample < SHADOW_SAMPLES; sample++) {
+               // Losowy punkt na sferze światła
+               Vector3D random_dir = new Vector3D();
+               RTRay.LambertianDir(new Vector3D(0,0,1), random_dir);
+
+               Point3D sphere_point = new Point3D();
+               sphere_point.x = lights[l].position.x + random_dir.x * lights[l].radius;
+               sphere_point.y = lights[l].position.y + random_dir.y * lights[l].radius;
+               sphere_point.z = lights[l].position.z + random_dir.z * lights[l].radius;
+
+               // Test cienia - identyczny jak dla światła punktowego
+               shadow_ray.P.x = shadow_ray_origin.x;
+               shadow_ray.P.y = shadow_ray_origin.y;
+               shadow_ray.P.z = shadow_ray_origin.z;
+
+               shadow_ray.u.FromPoints(sphere_point, int_point);
+
+               if ((n.DotProduct(shadow_ray.u) <= 0.0) && !materials[mat_index].is_transparent)
+                  continue;
+
+               double sample_dist = shadow_ray.u.GetLength();
+               shadow_ray.t_max = sample_dist;
+               shadow_ray.t_min = RTUtils.EPS;
+               shadow_ray.t_int = RTUtils.INFINITY;
+               shadow_ray.u.Normalize();
+               shadow_ray.Update();
+
+               attenuation.r = attenuation.g = attenuation.b = 1.0f;
+               if (FindLightAttenuation(shadow_ray, attenuation, int_object)) {
+                  double dist_clipped = Math.max(0.3, sample_dist);
+
+                  // Identyczne obliczenia jak dla światła punktowego
+                  double dist_att = lights[l].E * Math.abs(shadow_ray.u.DotProduct(n)) / dist_clipped;
+                  total_rf += dist_att * attenuation.r * lights[l].rgb.r * materials[mat_index].kdIr;
+                  total_gf += dist_att * attenuation.g * lights[l].rgb.g * materials[mat_index].kdIg;
+                  total_bf += dist_att * attenuation.b * lights[l].rgb.b * materials[mat_index].kdIb;
+
+                  if (materials[mat_index].is_specular_refl) {
+                     ray.ReflectedDir(n, glossy_dir);
+                     double g_factor = shadow_ray.u.DotProduct(glossy_dir);
+                     if (g_factor < 0)
+                        g_factor = 0.0;
+
+                     dist_att = lights[l].E * Math.pow(g_factor, materials[mat_index].g) / dist_clipped;
+
+                     total_rf += dist_att * attenuation.r * lights[l].rgb.r * materials[mat_index].ksIr;
+                     total_gf += dist_att * attenuation.g * lights[l].rgb.g * materials[mat_index].ksIg;
+                     total_bf += dist_att * attenuation.b * lights[l].rgb.b * materials[mat_index].ksIb;
+                  }
+                  successful_samples++;
+               }
+            }
+
+            // Uśrednij wyniki
+            if (successful_samples > 0) {
+               rf += total_rf / SHADOW_SAMPLES;
+               gf += total_gf / SHADOW_SAMPLES;
+               bf += total_bf / SHADOW_SAMPLES;
+            }
+
+         } else {
+            // ŚWIATŁO PUNKTOWE - dokładnie ten sam kod co wcześniej
+            // Test shadowing
+            shadow_ray.P.x = shadow_ray_origin.x;
+            shadow_ray.P.y = shadow_ray_origin.y;
+            shadow_ray.P.z = shadow_ray_origin.z;
+
+            //int_point.CopyTo( shadow_ray.P );
+            shadow_ray.u.FromPoints( lights[l].position, int_point );
+
+            // if the light on the opposite side than observer - skip the light,
+            // the only exception is the transparent-difuse surface which can be illuminated from
+            // both sides
+            if ( ( n.DotProduct( shadow_ray.u ) <= 0.0 ) &&  !materials[mat_index].is_transparent )
+               continue;
+
+            shadow_ray.t_max = dist_to_light = shadow_ray.u.GetLength();
+            shadow_ray.t_min = RTUtils.EPS;
+            shadow_ray.t_int = RTUtils.INFINITY;
+            shadow_ray.u.Normalize();
+            shadow_ray.Update();
+
+            attenuation.r = attenuation.g = attenuation.b = 1.0f;
+            if ( FindLightAttenuation( shadow_ray, attenuation, int_object ) )
             {
-               ray.ReflectedDir( n, glossy_dir );        
-               double  g_factor = shadow_ray.u.DotProduct( glossy_dir );
-               if ( g_factor < 0 )
-                  g_factor = 0.0;
-               
-               dist_att = lights[l].E * Math.pow( g_factor, materials[mat_index].g ) / dist_clipped;
-               
-               rf += dist_att * attenuation.r * lights[l].rgb.r * materials[mat_index].ksIr;
-               gf += dist_att * attenuation.g * lights[l].rgb.g * materials[mat_index].ksIg;
-               bf += dist_att * attenuation.b * lights[l].rgb.b * materials[mat_index].ksIb;                        
+               double dist_clipped = Math.max( 0.3, dist_to_light );
+
+               // Light arrives to the observed point
+               double dist_att = lights[l].E * Math.abs( shadow_ray.u.DotProduct( n ))  / dist_clipped;
+               rf += dist_att * attenuation.r * lights[l].rgb.r * materials[mat_index].kdIr;
+               gf += dist_att * attenuation.g * lights[l].rgb.g * materials[mat_index].kdIg;
+               bf += dist_att * attenuation.b * lights[l].rgb.b * materials[mat_index].kdIb;
+
+               if ( materials[mat_index].is_specular_refl )
+               {
+                  ray.ReflectedDir( n, glossy_dir );
+                  double  g_factor = shadow_ray.u.DotProduct( glossy_dir );
+                  if ( g_factor < 0 )
+                     g_factor = 0.0;
+
+                  dist_att = lights[l].E * Math.pow( g_factor, materials[mat_index].g ) / dist_clipped;
+
+                  rf += dist_att * attenuation.r * lights[l].rgb.r * materials[mat_index].ksIr;
+                  gf += dist_att * attenuation.g * lights[l].rgb.g * materials[mat_index].ksIg;
+                  bf += dist_att * attenuation.b * lights[l].rgb.b * materials[mat_index].ksIb;
+               }
             }
          }
       }
